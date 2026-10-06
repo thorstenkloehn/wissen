@@ -21,6 +21,7 @@ artifacts/
 
 # Geheimnisse und lokale Konfiguration (Passwörter gehören in die User-Secrets)
 secrets.json
+appsettings.json
 appsettings.*.local.json
 appsettings.Local.json
 .env
