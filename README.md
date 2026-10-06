@@ -56,3 +56,7 @@ Neu registrierte Benutzer müssen ihr Konto bestätigen, bevor sie sich anmelden
 | `Migrations/` | EF-Core-Migrationen für PostgreSQL |
 | `wwwroot/` | statische Dateien und Client-Bibliotheken |
 | `Dokument/` | Arbeitsbericht als mdBook, siehe [Dokument/README.md](Dokument/README.md) |
+
+## Lizenz
+
+[MIT](LICENSE)
