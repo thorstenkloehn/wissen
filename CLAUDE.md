@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 dotnet build                      # bauen
 dotnet run                        # starten: http://localhost:5227 (Profil "https": https://localhost:7279)
-dotnet ef migrations add <Name> -o Data/Migrations   # neue Migration
+dotnet ef migrations add <Name> -o Migrations   # neue Migration
 dotnet ef database update         # Migrationen auf PostgreSQL anwenden
 mdbook serve Dokument --open      # Arbeitsbericht unter http://localhost:3000
 ```
