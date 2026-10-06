@@ -25,7 +25,7 @@ Es gibt bisher kein Testprojekt und keine Lint-Konfiguration.
 
 Die Anwendung nutzt PostgreSQL über `Npgsql.EntityFrameworkCore.PostgreSQL` (die SQLite-Voreinstellung der Vorlage wurde entfernt). Migrationen sind providerspezifisch für PostgreSQL erzeugt.
 
-- `appsettings.json` enthält `ConnectionStrings:DefaultConnection` bewusst **mit Passwort** der lokalen Entwicklungsdatenbank (`Host=localhost;Port=5432;Database=thorsten;Username=thorsten;Password=...`). Das ist so gewollt; nicht entfernen. Die Datei steht deshalb in `.gitignore` und wird nicht versioniert; nach einem frischen Klon muss sie neu angelegt werden.
+- `appsettings.json` enthält `ConnectionStrings:DefaultConnection` bewusst **mit Passwort** der lokalen Entwicklungsdatenbank (`Host=localhost;Port=5432;Database=thorsten;Username=thorsten;Password=...`). Das ist so gewollt; nicht entfernen. Die Datei steht deshalb in `.gitignore` und wird nicht versioniert; nach einem frischen Klon wird sie aus der Vorlage `appsettings.example.json` (ohne echtes Passwort) neu angelegt: `cp appsettings.example.json appsettings.json`, dann das Passwort eintragen.
 - Die User-Secrets sind leer. Ein dort gesetzter Wert (`dotnet user-secrets set "ConnectionStrings:DefaultConnection" "..."`) würde `appsettings.json` in der Umgebung `Development` überschreiben.
 - Ohne passende PostgreSQL-Rolle scheitern `dotnet ef database update` und alle Identity-Seiten mit `28P01` (Passwort-Authentifizierung fehlgeschlagen).
 
