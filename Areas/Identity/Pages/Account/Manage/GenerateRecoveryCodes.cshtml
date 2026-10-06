@@ -1,0 +1,27 @@
+﻿@page
+@model GenerateRecoveryCodesModel
+@{
+    ViewData["Title"] = "Wiederherstellungscodes für die Zwei-Faktor-Authentifizierung (2FA) erzeugen";
+    ViewData["ActivePage"] = ManageNavPages.TwoFactorAuthentication;
+}
+
+<partial name="_StatusMessage" for="StatusMessage" />
+<h3>@ViewData["Title"]</h3>
+<div class="alert alert-warning" role="alert">
+    <p>
+        <span class="glyphicon glyphicon-warning-sign"></span>
+        <strong>Bewahren Sie diese Codes an einem sicheren Ort auf.</strong>
+    </p>
+    <p>
+        Wenn Sie Ihr Gerät verlieren und die Wiederherstellungscodes nicht haben, verlieren Sie den Zugriff auf Ihr Konto.
+    </p>
+    <p>
+        Das Erzeugen neuer Wiederherstellungscodes ändert nicht die Schlüssel, die in Authenticator-Apps verwendet werden. Wenn Sie den Schlüssel
+        einer Authenticator-App ändern möchten, sollten Sie <a asp-page="./ResetAuthenticator">Ihre Authenticator-Schlüssel zurücksetzen.</a>
+    </p>
+</div>
+<div>
+    <form method="post">
+        <button class="btn btn-danger" type="submit">Wiederherstellungscodes erzeugen</button>
+    </form>
+</div>

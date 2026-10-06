@@ -1,0 +1,29 @@
+﻿@page
+@model LoginWithRecoveryCodeModel
+@{
+    ViewData["Title"] = "Anmeldung mit Wiederherstellungscode";
+}
+
+<h1>@ViewData["Title"]</h1>
+<hr />
+<p>
+    Sie möchten sich mit einem Wiederherstellungscode anmelden. Diese Anmeldung wird nicht gespeichert, bis Sie bei der Anmeldung
+    einen Code aus der Authenticator-App eingeben oder 2FA deaktivieren und sich erneut anmelden.
+</p>
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+            <div class="form-floating mb-3">
+                <input asp-for="Input.RecoveryCode" class="form-control" autocomplete="off" placeholder="Wiederherstellungscode" />
+                <label asp-for="Input.RecoveryCode" class="form-label"></label>
+                <span asp-validation-for="Input.RecoveryCode" class="text-danger"></span>
+            </div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Anmelden</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

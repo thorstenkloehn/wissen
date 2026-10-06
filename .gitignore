@@ -1,0 +1,60 @@
+# Build-Ausgabe (.NET)
+bin/
+obj/
+out/
+publish/
+artifacts/
+*.nupkg
+*.snupkg
+
+# Benutzerspezifische IDE-Dateien
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+*.swp
+*~
+
+# Geheimnisse und lokale Konfiguration (Passwörter gehören in die User-Secrets)
+secrets.json
+appsettings.*.local.json
+appsettings.Local.json
+.env
+.env.*
+*.pfx
+*.pubxml
+*.publishsettings
+
+# Lokale Datenbanken, Dumps und Logs
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.dump
+*.log
+logs/
+
+# Tests und Codeabdeckung
+TestResults/
+coverage/
+*.trx
+*.coverage
+*.coveragexml
+
+# Node (falls Client-Werkzeuge hinzukommen)
+node_modules/
+npm-debug.log*
+
+# mdBook-Ausgabe des Arbeitsberichts
+Dokument/book/
+
+# Claude Code: lokale Einstellungen
+.claude/settings.local.json
+
+# Betriebssystem
+.DS_Store
+Thumbs.db
