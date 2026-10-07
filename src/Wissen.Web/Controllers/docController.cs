@@ -2,13 +2,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Wissen.Web.Controllers
 {
-    [Route("doc")]
+    [Route("{*path}")]
     public class docController : Controller
     {
         // GET: docController
-        public ActionResult Index()
+        public IActionResult HandleAll(string? path)
         {
-            return View();
+            ViewData["Path"] = path;
+            return View("Index");
         }
 
     }
