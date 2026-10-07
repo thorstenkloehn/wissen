@@ -59,3 +59,6 @@ Dokument/book/
 # Betriebssystem
 .DS_Store
 Thumbs.db
+
+# Datenbanksicherungen der Konsolenanwendung
+backups/

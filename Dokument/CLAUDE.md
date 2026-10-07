@@ -36,4 +36,4 @@ Installiert ist mdbook 0.5.x über `cargo install mdbook`.
 - `RAW/` – Rohtexte, die von Menschen geschrieben werden (siehe Arbeitsablauf). Der Ordner liegt außerhalb von `src/` und erscheint deshalb nicht im Buch.
 - `book/` – erzeugte Ausgabe, per `.gitignore` ausgeschlossen; nie von Hand bearbeiten.
 
-Der gesamte Ordner ist in `../wissen.csproj` vom .NET-Build ausgeschlossen.
+Der gesamte Ordner liegt außerhalb der .NET-Projekte (`../src`, `../tests`) und gehört damit nicht zum Build.
