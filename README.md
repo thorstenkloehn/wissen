@@ -105,16 +105,85 @@ sudo systemctl start wissen
 
 ## Sicherung und Wiederherstellung
 
+Es gibt zwei Arten von Sicherungen:
+
+| | `backup` / `restore` | `backup-xml` / `restore-xml` |
+| --- | --- | --- |
+| Inhalt | die ganze Datenbank: Seiten, Versionen und Konten | nur die Seiten mit ihrer Versionsgeschichte |
+| Format | `.dump` von `pg_dump`, nicht lesbar | `.xml`, mit jedem Texteditor lesbar |
+| Beim Einlesen | die Datenbank wird vollständig überschrieben | nur Seiten mit gleichem Pfad werden ersetzt |
+| Gedacht für | vollständige Wiederherstellung nach einem Verlust | Seiten ansehen, aufbewahren oder in eine andere Installation übernehmen |
+
+### Ganze Datenbank
+
 ```bash
 dotnet run --project src/Wissen.Cli -- backup                # nach backups/<Datenbank>-<Zeitstempel>.dump
 dotnet run --project src/Wissen.Cli -- backup sicherung.dump # in eine bestimmte Datei
 dotnet run --project src/Wissen.Cli -- restore sicherung.dump
-dotnet run --project src/Wissen.Cli -- backup-xml            # Seiten als XML nach backups/seiten-<Zeitstempel>.xml
 ```
 
-`backup-xml` schreibt alle Seiten mit Id, Pfad, Kategorie, Markdown und Versionsgeschichte in eine lesbare XML-Datei. Konten sind darin nicht enthalten, und einlesen lässt sich die Datei nicht; für eine vollständige Wiederherstellung ist `backup` gedacht.
-
 `restore` überschreibt den aktuellen Stand der Datenbank und fragt deshalb vorher nach; mit `--ja` entfällt die Rückfrage. Die Konsolenanwendung nutzt den Connection-String aus `src/Wissen.Web/appsettings.json`.
+
+### Seiten als XML
+
+Sichern:
+
+```bash
+dotnet run --project src/Wissen.Cli -- backup-xml            # nach backups/seiten-<Zeitstempel>.xml
+dotnet run --project src/Wissen.Cli -- backup-xml seiten.xml # in eine bestimmte Datei
+```
+
+Die Datei enthält je Seite Id, Pfad, Kategorie, Markdown und alle Versionen mit Nummer und Zeitpunkt (in UTC):
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<seiten erstelltAm="2026-10-08T15:51:37.3426179Z">
+  <seite id="1">
+    <path>doc</path>
+    <kategorie>Hauptseite</kategorie>
+    <markdown>## start
+
+Willkommen auf meine Seite</markdown>
+    <versionsgeschichte>
+      <version nummer="1" erstelltAm="2026-10-08T15:01:19.957186Z">
+        <kategorie>Hauptseite</kategorie>
+        <markdown>## start</markdown>
+      </version>
+      <version nummer="2" erstelltAm="2026-10-08T15:11:27.135033Z">
+        <kategorie>Hauptseite</kategorie>
+        <markdown>## start
+
+Willkommen auf meine Seite</markdown>
+      </version>
+    </versionsgeschichte>
+  </seite>
+</seiten>
+```
+
+Nicht enthalten sind die Konten und das erzeugte HTML; das HTML entsteht beim Einlesen neu aus dem Markdown.
+
+Einlesen:
+
+```bash
+dotnet run --project src/Wissen.Cli -- restore-xml seiten.xml       # mit Rückfrage, falls Seiten ersetzt werden
+dotnet run --project src/Wissen.Cli -- restore-xml seiten.xml --ja  # ohne Rückfrage
+```
+
+Dabei gilt:
+
+- Der Pfad entscheidet. Gibt es zu einem Pfad schon eine Seite, wird sie samt Versionsgeschichte durch den Stand aus der Datei ersetzt.
+- Seiten, die nicht in der Datei stehen, bleiben unverändert.
+- Die Ids aus der Datei werden nicht übernommen: Eine vorhandene Seite behält ihre Id, neue Seiten bekommen eine neue.
+- Ist die Datei fehlerhaft (ungültiger Pfad, fehlendes Element, abgeschnitten), wird nichts geändert und die Meldung nennt die Stelle.
+
+Was der Befehl in welchem Fall meldet:
+
+| Schritt | Ergebnis |
+| --- | --- |
+| Einlesen in eine leere Datenbank | `1 neu, 0 ersetzt` |
+| Erneut einlesen, Rückfrage mit „nein“ beantwortet | `Abgebrochen.`, nichts geändert |
+| Erneut einlesen mit `--ja` | `0 neu, 1 ersetzt` |
+| Danach wieder mit `backup-xml` sichern | Datei stimmt mit der Ausgangsdatei überein |
 
 ## Befehle
 
