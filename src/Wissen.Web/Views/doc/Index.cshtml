@@ -1,14 +1,12 @@
 ﻿@model Wissen.Infrastructure.Models.Seite?
 @{
-    ViewData["Title"] = "Dokumentation";
-}
-<h1>@ViewData["Title"]</h1>
-
-@{
+    // Eine vorhandene Seite bringt ihre Überschrift im Inhalt selbst mit.
+    ViewData["Title"] = Model?.Path ?? "Seite nicht vorhanden";
     var angemeldet = User.Identity?.IsAuthenticated == true;
 }
 @if (Model is null)
 {
+    <h1>@ViewData["Title"]</h1>
     <p>Zu „@ViewData["Path"]“ gibt es noch keine Seite.</p>
     @if (angemeldet)
     {
