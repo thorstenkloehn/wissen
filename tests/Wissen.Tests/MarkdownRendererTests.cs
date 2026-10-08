@@ -55,6 +55,8 @@ public class MarkdownRendererTests
     [InlineData("![Logo](https://fremd.example/p.png)", "<a href=\"https://fremd.example/p.png\">Bild: Logo</a>")]
     [InlineData("![](http://fremd.example/p.png)", "<a href=\"http://fremd.example/p.png\">Bild: http://fremd.example/p.png</a>")]
     [InlineData("![Logo](//fremd.example/p.png)", "<a href=\"//fremd.example/p.png\">Bild: Logo</a>")]
+    [InlineData("![Logo](https:/fremd.example/p.png)", "<a href=\"https:/fremd.example/p.png\">Bild: Logo</a>")]
+    [InlineData("![Logo](https:fremd.example/p.png)", "<a href=\"https:fremd.example/p.png\">Bild: Logo</a>")]
     [InlineData("[![Logo](https://fremd.example/p.png)](https://ziel.example/)", "<a href=\"https://ziel.example/\">Logo</a>")]
     public void ToHtml_TurnsExternalImagesIntoLinks(string markdown, string erwartet)
     {
@@ -101,6 +103,13 @@ public class MarkdownRendererTests
     [InlineData("\\\\fremd.example/a.png", true)]
     [InlineData("/\t/fremd.example/a.png", true)]
     [InlineData("data:image/png;base64,AAAA", true)]
+    [InlineData("https:/fremd.example/a.png", true)]
+    [InlineData("https:fremd.example/a.png", true)]
+    [InlineData(" HTTPS:/fremd.example/a.png", true)]
+    [InlineData("http:/fremd.example/a.png", true)]
+    [InlineData("bilder/a:b.png", false)]
+    [InlineData("./a:b.png", false)]
+    [InlineData("?x=a:b", false)]
     public void IsExternal_RecognisesAddressesOutsideTheOwnServer(string url, bool fremd)
     {
         Assert.Equal(fremd, MarkdownRenderer.IsExternal(url));

@@ -97,10 +97,30 @@ public static class MarkdownRenderer
         {
             return true;
         }
-        return !Uri.TryCreate(LocalBase, url.Trim(), out var resolved)
+        url = url.Trim();
+        // Jede Adresse mit Schema gilt als fremd. "https:/fremd.example/a.png" und "https:fremd.example/a.png"
+        // löst der Browser nur dann auf dem eigenen Server auf, wenn die Seite selbst über https kommt;
+        // auf einer http-Seite führen sie auf den fremden Server.
+        if (HasScheme(url))
+        {
+            return true;
+        }
+        return !Uri.TryCreate(LocalBase, url, out var resolved)
             || resolved.Scheme != LocalBase.Scheme
             || resolved.Host != LocalBase.Host;
     }
+
+    // Ein Schema steht am Anfang und endet am ersten ":"; vorher kommen nur Buchstaben, Ziffern, "+", "-" und ".".
+    private static bool HasScheme(string url)
+    {
+        var ende = url.IndexOf(':');
+        return ende > 0
+            && char.IsAsciiLetter(url[0])
+            && url.AsSpan(0, ende).IndexOfAnyExcept(SchemeChars) < 0;
+    }
+
+    private static readonly System.Buffers.SearchValues<char> SchemeChars =
+        System.Buffers.SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-.");
 
     private static readonly Uri LocalBase = new("https://eigener-server.invalid/a/b");
 
