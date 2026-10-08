@@ -20,4 +20,9 @@
     <ProjectReference Include="..\Wissen.Infrastructure\Wissen.Infrastructure.csproj" />
   </ItemGroup>
 
+  <!-- appsettings.json enthält das Passwort der lokalen Datenbank und darf nicht mit auf den Server. -->
+  <ItemGroup>
+    <Content Update="appsettings.json" CopyToPublishDirectory="Never" />
+  </ItemGroup>
+
 </Project>

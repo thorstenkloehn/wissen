@@ -1,0 +1,26 @@
+# systemd-Dienst der Web-App. Kopieren nach /etc/systemd/system/wissen.service, dann:
+#   sudo systemctl daemon-reload && sudo systemctl enable --now wissen
+[Unit]
+Description=wissen (ASP.NET Core)
+After=network.target postgresql.service
+
+[Service]
+User=wissen
+WorkingDirectory=/opt/wissen/web
+ExecStart=/usr/bin/dotnet /opt/wissen/web/Wissen.Web.dll
+EnvironmentFile=/etc/wissen/wissen.env
+Restart=always
+RestartSec=10
+
+# /var/lib/wissen als Heimatverzeichnis: Dort liegen die Schlüssel, mit denen die
+# Anmelde-Cookies geschützt sind. Ohne sie wären nach jedem Neustart alle abgemeldet.
+StateDirectory=wissen
+Environment=HOME=/var/lib/wissen
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

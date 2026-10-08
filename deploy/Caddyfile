@@ -1,0 +1,6 @@
+# Reverse-Proxy mit automatischem HTTPS-Zertifikat. Kopieren nach /etc/caddy/Caddyfile,
+# Domain eintragen, dann: sudo systemctl reload caddy
+# Die Domain muss per DNS auf den Server zeigen; die Ports 80 und 443 müssen offen sein.
+IHRE-DOMAIN.de {
+	reverse_proxy 127.0.0.1:5000
+}

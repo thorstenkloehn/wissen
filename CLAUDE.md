@@ -38,6 +38,10 @@ Jeder Befehl ist ein Modul: eine Klasse in `src/Wissen.Cli/Modules`, die `IComma
 
 Die Konsolenanwendung liest dieselbe `appsettings.json` wie die Web-App: `Wissen.Cli.csproj` kopiert `src/Wissen.Web/appsettings.json` beim Bauen in ihr Ausgabeverzeichnis. Nach einer Änderung der Datei also neu bauen.
 
+## Veröffentlichen
+
+`deploy/` enthält Vorlagen für einen Linux-Server (systemd-Dienst `wissen.service`, Umgebungsdatei `wissen.env.example`, `Caddyfile`); die Schritte stehen in `README.md`. `appsettings.json` ist in beiden `.csproj` vom Veröffentlichen ausgenommen (`CopyToPublishDirectory="Never"`), weil sie das lokale Passwort enthält; auf dem Server kommen alle Einstellungen aus Umgebungsvariablen (`ConnectionStrings__DefaultConnection`, `AllowedHosts`, `RegistrierungErlaubt`).
+
 ## Datenbank
 
 Die Anwendung nutzt PostgreSQL über `Npgsql.EntityFrameworkCore.PostgreSQL` (die SQLite-Voreinstellung der Vorlage wurde entfernt). Migrationen sind providerspezifisch für PostgreSQL erzeugt.

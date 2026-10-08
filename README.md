@@ -33,7 +33,47 @@ dotnet run --project src/Wissen.Web
 
 Die Anwendung läuft dann unter <http://localhost:5227> (Profil `https`: <https://localhost:7279>).
 
-Neu registrierte Benutzer müssen ihr Konto bestätigen, bevor sie sich anmelden können. Ein E-Mail-Versand ist nicht eingerichtet; in der Entwicklungsumgebung wird der Bestätigungslink nach der Registrierung direkt angezeigt.
+Die Registrierung ist abgeschaltet. Um ein Konto anzulegen, in `src/Wissen.Web/appsettings.json` vorübergehend `"RegistrierungErlaubt": true` eintragen und neu starten. Ein E-Mail-Versand ist nicht eingerichtet; der Bestätigungslink wird nach der Registrierung direkt angezeigt. Danach den Eintrag wieder entfernen.
+
+## Veröffentlichen auf einem Server
+
+Die Vorlagen in `deploy/` gehen von einem eigenen Linux-Server mit systemd aus: Die App läuft als Dienst und lauscht nur lokal, davor steht [Caddy](https://caddyserver.com/) als Reverse-Proxy und besorgt das HTTPS-Zertifikat. Auf dem Server werden die [ASP.NET Core Runtime 10](https://dotnet.microsoft.com/download/dotnet/10.0), PostgreSQL und Caddy gebraucht.
+
+`appsettings.json` wird nicht mit veröffentlicht, weil sie das Passwort der lokalen Datenbank enthält. Auf dem Server kommen alle Einstellungen aus `/etc/wissen/wissen.env`.
+
+1. Lokal veröffentlichen und die beiden Ordner nach `/opt/wissen/web` und `/opt/wissen/cli` auf den Server kopieren:
+
+   ```bash
+   dotnet publish src/Wissen.Web -c Release -o publish/web
+   dotnet publish src/Wissen.Cli -c Release -o publish/cli
+   ```
+
+2. Auf dem Server einen Benutzer für den Dienst sowie eine eigene Datenbankrolle und Datenbank anlegen (eigenes Passwort, nicht das lokale):
+
+   ```bash
+   sudo useradd --system --no-create-home wissen
+   sudo -u postgres createuser --pwprompt wissen
+   sudo -u postgres createdb --owner wissen wissen
+   ```
+
+3. `deploy/wissen.env.example` nach `/etc/wissen/wissen.env` kopieren, Domain und Passwort eintragen und die Datei mit `chmod 600` schützen.
+
+4. Die Datenbanktabellen anlegen:
+
+   ```bash
+   sudo sh -c 'set -a; . /etc/wissen/wissen.env; dotnet /opt/wissen/cli/Wissen.Cli.dll migrate'
+   ```
+
+5. `deploy/wissen.service` nach `/etc/systemd/system/` kopieren und den Dienst starten:
+
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable --now wissen
+   ```
+
+6. `deploy/Caddyfile` nach `/etc/caddy/Caddyfile` kopieren, die Domain eintragen und `sudo systemctl reload caddy` ausführen.
+
+7. Für das erste Konto in `/etc/wissen/wissen.env` vorübergehend `RegistrierungErlaubt='true'` setzen, `sudo systemctl restart wissen`, registrieren und bestätigen, dann wieder auf `false` stellen und neu starten.
 
 ## Sicherung und Wiederherstellung
 
@@ -66,6 +106,7 @@ dotnet run --project src/Wissen.Cli -- restore sicherung.dump
 | `src/Wissen.Infrastructure/` | Datenzugriff: `ApplicationDbContext`, EF-Core-Migrationen für PostgreSQL, Datenbanksicherung |
 | `src/Wissen.Cli/` | Konsolenanwendung; jeder Befehl ist ein Modul in `Modules/` |
 | `tests/Wissen.Tests/` | xUnit-Tests |
+| `deploy/` | Vorlagen für den Server: systemd-Dienst, Umgebungsdatei, Caddyfile |
 | `Dokument/` | Arbeitsbericht als mdBook, siehe [Dokument/README.md](Dokument/README.md) |
 
 ## Lizenz
