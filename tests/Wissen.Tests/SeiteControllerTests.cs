@@ -166,6 +166,59 @@ public class SeiteControllerTests
     }
 
     [Fact]
+    public async Task Zuruecksetzen_RestoresOldStateAsNewVersion()
+    {
+        using var db = CreateContext();
+        var controller = new SeiteController(db);
+        await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "alt" });
+        var id = (await db.Seiten.SingleAsync()).Id;
+        await controller.Bearbeiten(id, new SeiteBearbeitenViewModel { Kategorie = "Technik", MarkdownInhalt = "neu" });
+
+        var result = await controller.Zuruecksetzen(id, 1);
+
+        Assert.Equal("/doc/x", Assert.IsType<LocalRedirectResult>(result).Url);
+        var seite = await db.Seiten.Include(s => s.Versionen).SingleAsync();
+        Assert.Equal("alt", seite.MarkdownInhalt);
+        Assert.Equal("Allgemein", seite.Kategorie);
+        Assert.Contains("alt", seite.Inhalt);
+        Assert.Equal([1, 2, 3], seite.Versionen.Select(v => v.Nummer).Order());
+        Assert.Equal("neu", seite.Versionen.Single(v => v.Nummer == 2).MarkdownInhalt);
+        Assert.Equal("alt", seite.Versionen.Single(v => v.Nummer == 3).MarkdownInhalt);
+    }
+
+    [Fact]
+    public async Task Zuruecksetzen_ToCurrentState_AddsNoVersion()
+    {
+        using var db = CreateContext();
+        var controller = new SeiteController(db);
+        await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "Text" });
+        var id = (await db.Seiten.SingleAsync()).Id;
+
+        await controller.Zuruecksetzen(id, 1);
+
+        Assert.Equal(1, await db.SeitenVersionen.CountAsync());
+        Assert.IsType<NotFoundResult>(await controller.Zuruecksetzen(id, 7));
+    }
+
+    [Fact]
+    public async Task Loeschen_RemovesPageAndVersions()
+    {
+        using var db = CreateContext();
+        var controller = new SeiteController(db);
+        await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "alt" });
+        await controller.Neu(new SeiteNeuViewModel { Path = "doc/y", Kategorie = "Allgemein", MarkdownInhalt = "bleibt" });
+        var id = (await db.Seiten.SingleAsync(s => s.Path == "doc/x")).Id;
+        await controller.Bearbeiten(id, new SeiteBearbeitenViewModel { Kategorie = "Allgemein", MarkdownInhalt = "neu" });
+
+        var result = await controller.LoeschenBestaetigt(id);
+
+        Assert.Equal("/doc/x", Assert.IsType<LocalRedirectResult>(result).Url);
+        Assert.Equal("doc/y", (await db.Seiten.SingleAsync()).Path);
+        Assert.Equal("bleibt", (await db.SeitenVersionen.SingleAsync()).MarkdownInhalt);
+        Assert.IsType<NotFoundResult>(await controller.LoeschenBestaetigt(id));
+    }
+
+    [Fact]
     public async Task Doc_ListsVersionsNewestFirst()
     {
         using var db = CreateContext();

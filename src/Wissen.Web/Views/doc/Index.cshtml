@@ -21,7 +21,10 @@ else
     @Html.Raw(Model.Inhalt)
     @if (angemeldet)
     {
-        <p><a asp-controller="Seite" asp-action="Bearbeiten" asp-route-id="@Model.Id">Seite bearbeiten</a></p>
+        <p>
+            <a asp-controller="Seite" asp-action="Bearbeiten" asp-route-id="@Model.Id">Seite bearbeiten</a>
+            | <a asp-controller="Seite" asp-action="Loeschen" asp-route-id="@Model.Id">Seite löschen</a>
+        </p>
 
         <h2>Versionsgeschichte</h2>
         <ul>

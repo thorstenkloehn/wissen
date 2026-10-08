@@ -1,0 +1,17 @@
+﻿@model Wissen.Infrastructure.Models.Seite
+@{
+    ViewData["Title"] = "Seite löschen";
+}
+
+<h1>@ViewData["Title"]</h1>
+<p>
+    Möchten Sie die Seite <a href="/@Model.Path">@Model.Path</a> (Kategorie: @Model.Kategorie) wirklich löschen?
+</p>
+<p class="text-danger">
+    Dabei wird auch die gesamte Versionsgeschichte gelöscht (@ViewData["Versionen"] Versionen).
+    Das lässt sich nicht rückgängig machen.
+</p>
+<form asp-action="LoeschenBestaetigt" asp-route-id="@Model.Id" method="post">
+    <button type="submit" class="btn btn-danger">Endgültig löschen</button>
+    <a class="btn btn-link" href="/@Model.Path">Abbrechen</a>
+</form>

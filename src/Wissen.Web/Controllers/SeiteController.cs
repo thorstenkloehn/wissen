@@ -113,27 +113,37 @@ public class SeiteController(ApplicationDbContext db) : Controller
             return View(model);
         }
 
-        var kategorie = model.Kategorie!.Trim();
-        // Ohne Änderung entsteht keine neue Version.
-        if (kategorie != seite.Kategorie || model.MarkdownInhalt != seite.MarkdownInhalt)
-        {
-            var letzteNummer = await db.SeitenVersionen
-                .Where(v => v.SeiteId == id)
-                .MaxAsync(v => (int?)v.Nummer) ?? 0;
+        await AendereSeite(seite, model.Kategorie!.Trim(), model.MarkdownInhalt!);
 
-            seite.Kategorie = kategorie;
-            seite.MarkdownInhalt = model.MarkdownInhalt!;
-            seite.Inhalt = ToHtml(model.MarkdownInhalt!);
-            db.SeitenVersionen.Add(new SeitenVersion
-            {
-                SeiteId = id,
-                Nummer = letzteNummer + 1,
-                Kategorie = seite.Kategorie,
-                MarkdownInhalt = seite.MarkdownInhalt,
-                Inhalt = seite.Inhalt,
-            });
-            await db.SaveChangesAsync();
+        return RedirectToSeite(seite.Path);
+    }
+
+    [HttpGet("loeschen/{id:int}")]
+    public async Task<IActionResult> Loeschen(int id)
+    {
+        var seite = await db.Seiten.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id);
+        if (seite is null)
+        {
+            return NotFound();
         }
+
+        ViewData["Versionen"] = await db.SeitenVersionen.CountAsync(v => v.SeiteId == id);
+        return View(seite);
+    }
+
+    [HttpPost("loeschen/{id:int}")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> LoeschenBestaetigt(int id)
+    {
+        var seite = await db.Seiten.Include(s => s.Versionen).FirstOrDefaultAsync(s => s.Id == id);
+        if (seite is null)
+        {
+            return NotFound();
+        }
+
+        // Die Versionen werden mit der Seite gelöscht.
+        db.Seiten.Remove(seite);
+        await db.SaveChangesAsync();
 
         return RedirectToSeite(seite.Path);
     }
@@ -151,6 +161,53 @@ public class SeiteController(ApplicationDbContext db) : Controller
         }
 
         return View(version);
+    }
+
+    // Setzt die Seite auf den Stand einer früheren Version zurück. Die Geschichte bleibt erhalten:
+    // Der alte Stand wird als neue Version angehängt.
+    [HttpPost("{id:int}/version/{nummer:int}/zuruecksetzen")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Zuruecksetzen(int id, int nummer)
+    {
+        var seite = await db.Seiten.FirstOrDefaultAsync(s => s.Id == id);
+        var version = await db.SeitenVersionen
+            .AsNoTracking()
+            .FirstOrDefaultAsync(v => v.SeiteId == id && v.Nummer == nummer);
+        if (seite is null || version is null)
+        {
+            return NotFound();
+        }
+
+        await AendereSeite(seite, version.Kategorie, version.MarkdownInhalt);
+
+        return RedirectToSeite(seite.Path);
+    }
+
+    // Übernimmt Kategorie und Markdown in die Seite und hängt eine neue Version an.
+    // Ohne Änderung entsteht keine neue Version.
+    private async Task AendereSeite(Seite seite, string kategorie, string markdownInhalt)
+    {
+        if (kategorie == seite.Kategorie && markdownInhalt == seite.MarkdownInhalt)
+        {
+            return;
+        }
+
+        var letzteNummer = await db.SeitenVersionen
+            .Where(v => v.SeiteId == seite.Id)
+            .MaxAsync(v => (int?)v.Nummer) ?? 0;
+
+        seite.Kategorie = kategorie;
+        seite.MarkdownInhalt = markdownInhalt;
+        seite.Inhalt = ToHtml(markdownInhalt);
+        db.SeitenVersionen.Add(new SeitenVersion
+        {
+            SeiteId = seite.Id,
+            Nummer = letzteNummer + 1,
+            Kategorie = seite.Kategorie,
+            MarkdownInhalt = seite.MarkdownInhalt,
+            Inhalt = seite.Inhalt,
+        });
+        await db.SaveChangesAsync();
     }
 
     private LocalRedirectResult RedirectToSeite(string path) =>

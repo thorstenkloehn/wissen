@@ -8,5 +8,15 @@
     Früherer Stand der Seite <a href="/@Model.Seite.Path">@Model.Seite.Path</a>
     vom @Model.ErstelltAm.ToLocalTime().ToString("dd.MM.yyyy HH:mm"), Kategorie: @Model.Kategorie
 </p>
+@if (Model.MarkdownInhalt != Model.Seite.MarkdownInhalt || Model.Kategorie != Model.Seite.Kategorie)
+{
+    <form asp-action="Zuruecksetzen" asp-route-id="@Model.SeiteId" asp-route-nummer="@Model.Nummer" method="post">
+        <button type="submit" class="btn btn-warning">Seite auf diese Version zurücksetzen</button>
+    </form>
+}
+else
+{
+    <p>Dies ist der aktuelle Stand der Seite.</p>
+}
 <hr />
 @Html.Raw(Model.Inhalt)
