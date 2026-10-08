@@ -15,6 +15,7 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(connectionString));
         services.AddSingleton(new DatabaseBackup(connectionString));
+        services.AddScoped<SeitenXmlExport>();
         return services;
     }
 }

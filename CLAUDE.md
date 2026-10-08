@@ -8,7 +8,7 @@ Die Solution `wissen.slnx` fasst vier Projekte zusammen (.NET 10):
 
 - `src/Wissen.Web` ist die ASP.NET-Core-MVC-Anwendung (Controller, Views, Identity-Seiten, `Program.cs`).
 - `src/Wissen.Infrastructure` ist die Klassenbibliothek für den Datenzugriff: `ApplicationDbContext` (`Data/`), die EF-Core-Migrationen (`Migrations/`) und `DatabaseBackup` (`Backup/`). `AddInfrastructure()` in `DependencyInjection.cs` verdrahtet das für Web-App und Konsolenanwendung gemeinsam.
-- `src/Wissen.Cli` ist die Konsolenanwendung mit den Befehlen `backup`, `restore` und `migrate`.
+- `src/Wissen.Cli` ist die Konsolenanwendung mit den Befehlen `backup`, `backup-xml`, `restore` und `migrate`.
 - `tests/Wissen.Tests` enthält die xUnit-Tests.
 - `./Dokument` ist ein mdBook-Arbeitsbericht. **Der Inhalt stammt vom Nutzer:** Er schreibt Rohtexte in `Dokument/RAW`, Claude macht daraus fertige Artikel und korrigiert dabei nur Rechtschreibung und Grammatik, ohne etwas hinzuzudichten. Der genaue Ablauf steht in `Dokument/CLAUDE.md`; vor jeder Arbeit in `Dokument` dort nachlesen.
 
@@ -22,6 +22,7 @@ dotnet test                              # Tests ausführen
 dotnet run --project src/Wissen.Web      # starten: http://localhost:5227 (Profil "https": https://localhost:7279)
 dotnet run --project src/Wissen.Cli -- help            # Befehle der Konsolenanwendung
 dotnet run --project src/Wissen.Cli -- backup [Datei]  # Sicherung, Standard: backups/<Datenbank>-<Zeitstempel>.dump
+dotnet run --project src/Wissen.Cli -- backup-xml [Datei] # Seiten mit Versionsgeschichte als XML, Standard: backups/seiten-<Zeitstempel>.xml
 dotnet run --project src/Wissen.Cli -- restore <Datei> # Wiederherstellung, überschreibt die Datenbank (--ja: ohne Rückfrage)
 dotnet ef migrations add <Name> --project src/Wissen.Infrastructure --startup-project src/Wissen.Web   # neue Migration
 dotnet ef database update --project src/Wissen.Infrastructure --startup-project src/Wissen.Web         # Migrationen anwenden
@@ -35,6 +36,8 @@ Es gibt keine Lint-Konfiguration.
 Jeder Befehl ist ein Modul: eine Klasse in `src/Wissen.Cli/Modules`, die `ICommandModule` implementiert und in `src/Wissen.Cli/Program.cs` mit `AddScoped<ICommandModule, ...>()` angemeldet wird. Die Hilfe listet angemeldete Module automatisch auf. Module bekommen ihre Abhängigkeiten (z. B. `ApplicationDbContext`, `DatabaseBackup`) per Konstruktor.
 
 `backup` und `restore` rufen `pg_dump` und `pg_restore` auf; die PostgreSQL-Client-Programme müssen im `PATH` liegen. Das Passwort wird über `PGPASSWORD` übergeben, nie als Argument. `restore` läuft in einer einzigen Transaktion (`--clean --if-exists --single-transaction`).
+
+`backup-xml` schreibt über `SeitenXmlExport` (`src/Wissen.Infrastructure/Backup/`) nur die Seiten: Id, Pfad, Kategorie, Markdown und alle Versionen, ohne das erzeugte HTML und ohne Konten. Einen Befehl zum Einlesen dieser XML-Datei gibt es nicht; vollständig wiederherstellen lässt sich nur aus einer `backup`-Sicherung.
 
 Die Konsolenanwendung liest dieselbe `appsettings.json` wie die Web-App: `Wissen.Cli.csproj` kopiert `src/Wissen.Web/appsettings.json` beim Bauen in ihr Ausgabeverzeichnis. Nach einer Änderung der Datei also neu bauen.
 

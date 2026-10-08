@@ -20,6 +20,7 @@ try
 
     // Module der Konsolenanwendung; neue Module hier anmelden.
     builder.Services.AddScoped<ICommandModule, BackupModule>();
+    builder.Services.AddScoped<ICommandModule, BackupXmlModule>();
     builder.Services.AddScoped<ICommandModule, RestoreModule>();
     builder.Services.AddScoped<ICommandModule, MigrateModule>();
 

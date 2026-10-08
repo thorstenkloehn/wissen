@@ -109,7 +109,10 @@ sudo systemctl start wissen
 dotnet run --project src/Wissen.Cli -- backup                # nach backups/<Datenbank>-<Zeitstempel>.dump
 dotnet run --project src/Wissen.Cli -- backup sicherung.dump # in eine bestimmte Datei
 dotnet run --project src/Wissen.Cli -- restore sicherung.dump
+dotnet run --project src/Wissen.Cli -- backup-xml            # Seiten als XML nach backups/seiten-<Zeitstempel>.xml
 ```
+
+`backup-xml` schreibt alle Seiten mit Id, Pfad, Kategorie, Markdown und Versionsgeschichte in eine lesbare XML-Datei. Konten sind darin nicht enthalten, und einlesen lässt sich die Datei nicht; für eine vollständige Wiederherstellung ist `backup` gedacht.
 
 `restore` überschreibt den aktuellen Stand der Datenbank und fragt deshalb vorher nach; mit `--ja` entfällt die Rückfrage. Die Konsolenanwendung nutzt den Connection-String aus `src/Wissen.Web/appsettings.json`.
 
