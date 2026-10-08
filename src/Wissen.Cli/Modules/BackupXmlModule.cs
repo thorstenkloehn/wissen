@@ -22,7 +22,7 @@ public class BackupXmlModule(SeitenXmlExport export) : ICommandModule
         var file = Path.GetFullPath(args.Length == 1
             ? args[0]
             : Path.Combine("backups", $"seiten-{DateTime.Now:yyyyMMdd-HHmmss}.xml"));
-        Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+        PrivateFile.Create(file);
 
         var document = await export.CreateAsync(cancellationToken);
         await using (var writer = XmlWriter.Create(file, new XmlWriterSettings { Indent = true, Async = true }))

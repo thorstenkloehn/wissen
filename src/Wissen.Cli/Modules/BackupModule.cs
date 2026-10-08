@@ -21,7 +21,7 @@ public class BackupModule(DatabaseBackup backup) : ICommandModule
         var file = Path.GetFullPath(args.Length == 1
             ? args[0]
             : Path.Combine("backups", $"{backup.Database}-{DateTime.Now:yyyyMMdd-HHmmss}.dump"));
-        Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+        PrivateFile.Create(file);
 
         var exitCode = await backup.BackupAsync(file, cancellationToken);
         if (exitCode != 0)
