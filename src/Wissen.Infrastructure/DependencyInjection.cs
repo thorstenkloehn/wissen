@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,8 +15,13 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(connectionString));
+        // Die Identity-Oberfläche der Web-App begrenzt Schlüsselspalten auf 128 Zeichen, und so sind die
+        // Migrationen erzeugt. Ohne dieselbe Einstellung sähe die Konsolenanwendung ein abweichendes Modell,
+        // und migrate bräche mit "pending model changes" ab.
+        services.Configure<IdentityOptions>(options => options.Stores.MaxLengthForKeys = 128);
         services.AddSingleton(new DatabaseBackup(connectionString));
         services.AddScoped<SeitenXmlExport>();
+        services.AddScoped<SeitenXmlImport>();
         return services;
     }
 }

@@ -1,10 +1,9 @@
-using Ganss.Xss;
-using Markdig;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Wissen.Infrastructure.Data;
 using Wissen.Infrastructure.Models;
+using Wissen.Infrastructure.Rendering;
 using Wissen.Web.Models;
 
 namespace Wissen.Web.Controllers;
@@ -13,27 +12,6 @@ namespace Wissen.Web.Controllers;
 [Route("seite")]
 public class SeiteController(ApplicationDbContext db) : Controller
 {
-    private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
-        .UseAdvancedExtensions()
-        .DisableHtml()
-        .Build();
-
-    private static readonly HtmlSanitizer Sanitizer = CreateSanitizer();
-
-    private static HtmlSanitizer CreateSanitizer()
-    {
-        var sanitizer = new HtmlSanitizer();
-        sanitizer.AllowedAttributes.Add("id");
-        sanitizer.AllowedAttributes.Add("class");
-        sanitizer.AllowedSchemes.Add("mailto");
-        return sanitizer;
-    }
-
-    // Seite.Inhalt wird roh ausgegeben. DisableHtml allein genügt dafür nicht: Markdown erlaubt
-    // weiterhin javascript:-Links und Attribute wie {onclick=...}; die entfernt erst der Sanitizer.
-    private static string ToHtml(string markdown) =>
-        Sanitizer.Sanitize(Markdown.ToHtml(markdown, Pipeline));
-
     [HttpGet("neu")]
     public IActionResult Neu(string? path)
     {
@@ -57,7 +35,7 @@ public class SeiteController(ApplicationDbContext db) : Controller
         }
 
         var kategorie = model.Kategorie!.Trim();
-        var inhalt = ToHtml(model.MarkdownInhalt!);
+        var inhalt = MarkdownRenderer.ToHtml(model.MarkdownInhalt!);
 
         var seite = new Seite
         {
@@ -198,7 +176,7 @@ public class SeiteController(ApplicationDbContext db) : Controller
 
         seite.Kategorie = kategorie;
         seite.MarkdownInhalt = markdownInhalt;
-        seite.Inhalt = ToHtml(markdownInhalt);
+        seite.Inhalt = MarkdownRenderer.ToHtml(markdownInhalt);
         db.SeitenVersionen.Add(new SeitenVersion
         {
             SeiteId = seite.Id,

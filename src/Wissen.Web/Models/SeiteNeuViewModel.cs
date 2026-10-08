@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Wissen.Infrastructure.Models;
 
 namespace Wissen.Web.Models;
 
@@ -6,8 +7,7 @@ public class SeiteNeuViewModel
 {
     [Required(ErrorMessage = "Bitte geben Sie einen Pfad an.")]
     [StringLength(500, ErrorMessage = "Der Pfad darf höchstens {1} Zeichen lang sein.")]
-    // Das Muster wird auch im Browser geprüft; JavaScript kennt dort kein \p{L}, deshalb die Zeichenbereiche.
-    [RegularExpression(@"^\s*/?[A-Za-z0-9À-ÖØ-öø-ɏ_-]+(/[A-Za-z0-9À-ÖØ-öø-ɏ_-]+)*/?\s*$",
+    [RegularExpression(@"^\s*/?" + Seite.PathSegment + "(/" + Seite.PathSegment + @")*/?\s*$",
         ErrorMessage = "Der Pfad darf nur Buchstaben, Ziffern, Bindestriche und Unterstriche enthalten, getrennt durch Schrägstriche.")]
     [Display(Name = "Pfad")]
     public string? Path { get; set; }

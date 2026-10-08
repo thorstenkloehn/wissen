@@ -22,6 +22,7 @@ try
     builder.Services.AddScoped<ICommandModule, BackupModule>();
     builder.Services.AddScoped<ICommandModule, BackupXmlModule>();
     builder.Services.AddScoped<ICommandModule, RestoreModule>();
+    builder.Services.AddScoped<ICommandModule, RestoreXmlModule>();
     builder.Services.AddScoped<ICommandModule, MigrateModule>();
 
     using var host = builder.Build();
