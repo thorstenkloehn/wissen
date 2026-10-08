@@ -39,7 +39,9 @@ Die Registrierung im Browser ist abgeschaltet. Ein Konto legt die Konsolenanwend
 dotnet run --project src/Wissen.Cli -- konto-anlegen name@example.org --admin
 ```
 
-Das Konto kann sich sofort anmelden. Mit `--admin` darf es Seiten löschen; ohne die Angabe darf es Seiten nur anlegen, bearbeiten und zurücksetzen. Einem vorhandenen Konto gibt `konto-admin name@example.org` die Rolle, `konto-admin name@example.org --entziehen` nimmt sie wieder weg; beides gilt ab der nächsten Anmeldung. Ein E-Mail-Versand ist nicht eingerichtet; ein im Browser registriertes Konto (`"RegistrierungErlaubt": true`) ließe sich deshalb nicht bestätigen.
+Das Konto kann sich sofort anmelden. Mit `--admin` darf es Seiten löschen; ohne die Angabe darf es Seiten nur anlegen, bearbeiten und zurücksetzen. Einem vorhandenen Konto gibt `konto-admin name@example.org` die Rolle, `konto-admin name@example.org --entziehen` nimmt sie wieder weg; beides gilt ab der nächsten Anmeldung.
+
+Je IP-Adresse sind 5 Anmeldeversuche in 5 Minuten möglich. Ein Konto wird nach 20 Fehlversuchen für 5 Minuten gesperrt. Ein E-Mail-Versand ist nicht eingerichtet; ein im Browser registriertes Konto (`"RegistrierungErlaubt": true`) ließe sich deshalb nicht bestätigen.
 
 ## Veröffentlichen auf einem Server
 

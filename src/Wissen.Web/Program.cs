@@ -10,11 +10,19 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
+builder.Services.AddDefaultIdentity<IdentityUser>(options =>
+    {
+        options.SignIn.RequireConfirmedAccount = true;
+        // Den einzelnen Absender bremst schon AnmeldeBegrenzung nach 5 Versuchen. Die Sperre des Kontos
+        // greift erst später, damit nicht jeder ein fremdes Konto mit wenigen Versuchen sperren kann.
+        options.Lockout.MaxFailedAccessAttempts = 20;
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+    })
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddErrorDescriber<GermanIdentityErrorDescriber>();
 builder.Services.AddControllersWithViews();
+builder.Services.AddRateLimiter(AnmeldeBegrenzung.Configure);
 
 // Ohne "RegistrierungErlaubt": true kann sich niemand selbst ein Konto anlegen.
 if (!builder.Configuration.GetValue<bool>("RegistrierungErlaubt"))
@@ -67,6 +75,8 @@ else
 
 app.UseHttpsRedirection();
 app.UseRouting();
+
+app.UseRateLimiter();
 
 app.UseAuthorization();
 
