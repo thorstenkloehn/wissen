@@ -1,3 +1,4 @@
+using Ganss.Xss;
 using Markdig;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,11 +13,26 @@ namespace Wissen.Web.Controllers;
 [Route("seite")]
 public class SeiteController(ApplicationDbContext db) : Controller
 {
-    // HTML im Markdown wird maskiert, damit Seite.Inhalt gefahrlos roh ausgegeben werden kann.
     private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
         .DisableHtml()
         .Build();
+
+    private static readonly HtmlSanitizer Sanitizer = CreateSanitizer();
+
+    private static HtmlSanitizer CreateSanitizer()
+    {
+        var sanitizer = new HtmlSanitizer();
+        sanitizer.AllowedAttributes.Add("id");
+        sanitizer.AllowedAttributes.Add("class");
+        sanitizer.AllowedSchemes.Add("mailto");
+        return sanitizer;
+    }
+
+    // Seite.Inhalt wird roh ausgegeben. DisableHtml allein genügt dafür nicht: Markdown erlaubt
+    // weiterhin javascript:-Links und Attribute wie {onclick=...}; die entfernt erst der Sanitizer.
+    private static string ToHtml(string markdown) =>
+        Sanitizer.Sanitize(Markdown.ToHtml(markdown, Pipeline));
 
     [HttpGet("neu")]
     public IActionResult Neu(string? path)
@@ -41,7 +57,7 @@ public class SeiteController(ApplicationDbContext db) : Controller
         }
 
         var kategorie = model.Kategorie!.Trim();
-        var inhalt = Markdown.ToHtml(model.MarkdownInhalt!, Pipeline);
+        var inhalt = ToHtml(model.MarkdownInhalt!);
 
         var seite = new Seite
         {
@@ -107,7 +123,7 @@ public class SeiteController(ApplicationDbContext db) : Controller
 
             seite.Kategorie = kategorie;
             seite.MarkdownInhalt = model.MarkdownInhalt!;
-            seite.Inhalt = Markdown.ToHtml(model.MarkdownInhalt!, Pipeline);
+            seite.Inhalt = ToHtml(model.MarkdownInhalt!);
             db.SeitenVersionen.Add(new SeitenVersion
             {
                 SeiteId = id,
@@ -122,7 +138,6 @@ public class SeiteController(ApplicationDbContext db) : Controller
         return RedirectToSeite(seite.Path);
     }
 
-    [AllowAnonymous]
     [HttpGet("{id:int}/version/{nummer:int}")]
     public async Task<IActionResult> Version(int id, int nummer)
     {

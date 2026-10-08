@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Wissen.Infrastructure.Data;
@@ -50,6 +52,40 @@ public class SeiteControllerTests
         });
 
         Assert.DoesNotContain("<script", (await db.Seiten.SingleAsync()).Inhalt);
+    }
+
+    [Theory]
+    [InlineData("[x](javascript:alert(1))", "javascript:")]
+    [InlineData("<javascript:alert(1)>", "href=\"javascript:")]
+    [InlineData("![b](javascript:alert(1))", "javascript:")]
+    [InlineData("# Titel {onclick=alert(1)}", "onclick")]
+    [InlineData("[x](http://a.example){onmouseover=alert(1)}", "onmouseover")]
+    public async Task Neu_RemovesScriptFromMarkdown(string markdown, string forbidden)
+    {
+        using var db = CreateContext();
+
+        await new SeiteController(db).Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = markdown });
+
+        Assert.DoesNotContain(forbidden, (await db.Seiten.SingleAsync()).Inhalt);
+    }
+
+    [Fact]
+    public async Task Neu_KeepsOrdinaryMarkdown()
+    {
+        using var db = CreateContext();
+
+        await new SeiteController(db).Neu(new SeiteNeuViewModel
+        {
+            Path = "doc/x",
+            Kategorie = "Allgemein",
+            MarkdownInhalt = "# Titel\n\n[Link](https://example.org) und [Mail](mailto:a@example.org)\n\n| a | b |\n|---|---|\n| 1 | 2 |",
+        });
+
+        var inhalt = (await db.Seiten.SingleAsync()).Inhalt;
+        Assert.Contains("<h1 id=\"titel\">Titel</h1>", inhalt);
+        Assert.Contains("href=\"https://example.org\"", inhalt);
+        Assert.Contains("href=\"mailto:a@example.org\"", inhalt);
+        Assert.Contains("<table>", inhalt);
     }
 
     [Fact]
@@ -138,10 +174,34 @@ public class SeiteControllerTests
         var id = (await db.Seiten.SingleAsync()).Id;
         await controller.Bearbeiten(id, new SeiteBearbeitenViewModel { Kategorie = "Allgemein", MarkdownInhalt = "neu" });
 
-        var seite = Assert.IsType<Seite>(Assert.IsType<ViewResult>(await new docController(db).HandleAll("doc/x")).Model);
+        var seite = Assert.IsType<Seite>(Assert.IsType<ViewResult>(await CreateDocController(db, angemeldet: true).HandleAll("doc/x")).Model);
 
         Assert.Equal([2, 1], seite.Versionen.Select(v => v.Nummer));
     }
+
+    [Fact]
+    public async Task Doc_Anonymous_GetsContentWithoutVersions()
+    {
+        using var db = CreateContext();
+        await new SeiteController(db).Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "Text" });
+
+        var seite = Assert.IsType<Seite>(Assert.IsType<ViewResult>(await CreateDocController(db, angemeldet: false).HandleAll("doc/x")).Model);
+
+        Assert.Contains("Text", seite.Inhalt);
+        Assert.Empty(seite.Versionen);
+    }
+
+    private static docController CreateDocController(ApplicationDbContext db, bool angemeldet) =>
+        new(db)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(angemeldet ? new ClaimsIdentity("Test") : new ClaimsIdentity()),
+                },
+            },
+        };
 }
 
 public class SeiteNeuViewModelTests

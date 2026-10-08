@@ -15,7 +15,8 @@ namespace Wissen.Web.Controllers
                 .AsNoTracking()
                 .FirstOrDefaultAsync(s => s.Path == path);
 
-            if (seite is not null)
+            // Die Versionsgeschichte sehen nur angemeldete Benutzer.
+            if (seite is not null && User?.Identity?.IsAuthenticated == true)
             {
                 // Für die Liste der Versionen genügen die Kopfdaten, nicht die Inhalte.
                 seite.Versionen = await db.SeitenVersionen

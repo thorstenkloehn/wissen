@@ -4,25 +4,34 @@
 }
 <h1>@ViewData["Title"]</h1>
 
+@{
+    var angemeldet = User.Identity?.IsAuthenticated == true;
+}
 @if (Model is null)
 {
     <p>Zu „@ViewData["Path"]“ gibt es noch keine Seite.</p>
-    <p><a asp-controller="Seite" asp-action="Neu" asp-route-path="@ViewData["Path"]">Seite anlegen</a></p>
+    @if (angemeldet)
+    {
+        <p><a asp-controller="Seite" asp-action="Neu" asp-route-path="@ViewData["Path"]">Seite anlegen</a></p>
+    }
 }
 else
 {
     <p>Kategorie: @Model.Kategorie</p>
     @Html.Raw(Model.Inhalt)
-    <p><a asp-controller="Seite" asp-action="Bearbeiten" asp-route-id="@Model.Id">Seite bearbeiten</a></p>
+    @if (angemeldet)
+    {
+        <p><a asp-controller="Seite" asp-action="Bearbeiten" asp-route-id="@Model.Id">Seite bearbeiten</a></p>
 
-    <h2>Versionsgeschichte</h2>
-    <ul>
-        @foreach (var version in Model.Versionen)
-        {
-            <li>
-                <a asp-controller="Seite" asp-action="Version" asp-route-id="@Model.Id" asp-route-nummer="@version.Nummer">Version @version.Nummer</a>
-                vom @version.ErstelltAm.ToLocalTime().ToString("dd.MM.yyyy HH:mm"), Kategorie: @version.Kategorie
-            </li>
-        }
-    </ul>
+        <h2>Versionsgeschichte</h2>
+        <ul>
+            @foreach (var version in Model.Versionen)
+            {
+                <li>
+                    <a asp-controller="Seite" asp-action="Version" asp-route-id="@Model.Id" asp-route-nummer="@version.Nummer">Version @version.Nummer</a>
+                    vom @version.ErstelltAm.ToLocalTime().ToString("dd.MM.yyyy HH:mm"), Kategorie: @version.Kategorie
+                </li>
+            }
+        </ul>
+    }
 }
