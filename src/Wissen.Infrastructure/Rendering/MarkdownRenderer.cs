@@ -1,3 +1,4 @@
+using AngleSharp.Dom;
 using Ganss.Xss;
 using Markdig;
 
@@ -41,7 +42,58 @@ public static class MarkdownRenderer
             e.Cancel = e.CssClass.StartsWith(LanguageClassPrefix, StringComparison.Ordinal);
         sanitizer.AllowedCssProperties.Clear();
         sanitizer.AllowedCssProperties.Add("text-align");
+
+        // Bilder und Medien von fremden Servern würden beim bloßen Lesen einer Seite geladen und
+        // verrieten dem fremden Server die IP-Adresse jedes Besuchers. Aus einem fremden Bild wird
+        // deshalb ein Link, den der Leser selbst anklicken muss; andere fremde Quellen entfallen.
+        sanitizer.AllowedAttributes.Remove("srcset");
+        sanitizer.FilterUrl += (_, e) =>
+        {
+            if (e.Tag.LocalName is not ("a" or "img") && IsExternal(e.OriginalUrl))
+            {
+                e.SanitizedUrl = null;
+            }
+        };
+        sanitizer.PostProcessNode += (_, e) =>
+        {
+            if (e.Node is IElement { LocalName: "img" } img && img.GetAttribute("src") is { } src && IsExternal(src))
+            {
+                e.ReplacementNodes.Add(CreateImageLink(e.Document, img, src));
+            }
+        };
         return sanitizer;
+    }
+
+    // Fremd ist jede Adresse, die der Browser nicht auf dem eigenen Server auflöst.
+    public static bool IsExternal(string url)
+    {
+        // Browser lesen "\" wie "/" und überspringen Tabs und Zeilenumbrüche: "/\fremd.example" und
+        // "/<Tab>/fremd.example" führen auf einen fremden Server.
+        if (url.Any(c => c == '\\' || char.IsControl(c)))
+        {
+            return true;
+        }
+        return !Uri.TryCreate(LocalBase, url.Trim(), out var resolved)
+            || resolved.Scheme != LocalBase.Scheme
+            || resolved.Host != LocalBase.Host;
+    }
+
+    private static readonly Uri LocalBase = new("https://eigener-server.invalid/a/b");
+
+    private static INode CreateImageLink(IDocument document, IElement img, string src)
+    {
+        var alt = img.GetAttribute("alt");
+        var text = string.IsNullOrWhiteSpace(alt) ? src : alt;
+        // Steht das Bild schon in einem Link, bleibt nur der Text: Links lassen sich nicht schachteln.
+        if (img.Ancestors<IElement>().Any(a => a.LocalName == "a"))
+        {
+            return document.CreateTextNode(text);
+        }
+
+        var link = document.CreateElement("a");
+        link.SetAttribute("href", src);
+        link.TextContent = $"Bild: {text}";
+        return link;
     }
 
     // Seite.Inhalt wird roh ausgegeben. DisableHtml allein genügt dafür nicht: Markdown erlaubt

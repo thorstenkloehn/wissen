@@ -43,7 +43,8 @@ var app = builder.Build();
 // eigenen Dateien: Inline-Skripte und onclick-Attribute in Views werden vom Browser blockiert.
 var contentSecurityPolicy = string.Join("; ",
     "default-src 'self'",
-    "img-src 'self' data: https:",
+    // Keine Bilder von fremden Servern: Sie verrieten dem fremden Server jeden Besucher der Seite.
+    "img-src 'self' data:",
     "style-src 'self' 'unsafe-inline'",
     // Hot Reload (dotnet watch) spricht in der Entwicklung über WebSockets mit dem Browser.
     app.Environment.IsDevelopment() ? "connect-src 'self' ws://localhost:* wss://localhost:*" : "connect-src 'self'",

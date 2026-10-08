@@ -52,6 +52,61 @@ public class MarkdownRendererTests
     }
 
     [Theory]
+    [InlineData("![Logo](https://fremd.example/p.png)", "<a href=\"https://fremd.example/p.png\">Bild: Logo</a>")]
+    [InlineData("![](http://fremd.example/p.png)", "<a href=\"http://fremd.example/p.png\">Bild: http://fremd.example/p.png</a>")]
+    [InlineData("![Logo](//fremd.example/p.png)", "<a href=\"//fremd.example/p.png\">Bild: Logo</a>")]
+    [InlineData("[![Logo](https://fremd.example/p.png)](https://ziel.example/)", "<a href=\"https://ziel.example/\">Logo</a>")]
+    public void ToHtml_TurnsExternalImagesIntoLinks(string markdown, string erwartet)
+    {
+        var html = MarkdownRenderer.ToHtml(markdown);
+
+        Assert.Contains(erwartet, html);
+        Assert.DoesNotContain("<img", html);
+    }
+
+    [Theory]
+    [InlineData("![x](/\\fremd.example/p.png)")]
+    [InlineData("![x](https://fremd.example/p.png){srcset=\"https://fremd.example/q.png 2x\"}")]
+    [InlineData("![x](/bilder/a.png){srcset=\"https://fremd.example/q.png 2x\"}")]
+    [InlineData("![Film](https://fremd.example/film.mp4)")]
+    [InlineData("![Ton](https://fremd.example/ton.mp3)")]
+    [InlineData("![Video](https://www.youtube.com/watch?v=abc)")]
+    public void ToHtml_LoadsNothingFromOtherServers(string markdown)
+    {
+        var html = MarkdownRenderer.ToHtml(markdown);
+
+        Assert.DoesNotContain("src=\"http", html);
+        Assert.DoesNotContain("src=\"//", html);
+        Assert.DoesNotContain("src=\"/\\", html);
+        Assert.DoesNotContain("srcset", html);
+        Assert.DoesNotContain("<iframe", html);
+    }
+
+    [Theory]
+    [InlineData("![Plan](/bilder/plan.png)", "<img src=\"/bilder/plan.png\" alt=\"Plan\">")]
+    [InlineData("![Plan](plan.png)", "<img src=\"plan.png\" alt=\"Plan\">")]
+    [InlineData("[Link](https://fremd.example/)", "<a href=\"https://fremd.example/\">Link</a>")]
+    public void ToHtml_KeepsOwnImagesAndOrdinaryLinks(string markdown, string erwartet)
+    {
+        Assert.Contains(erwartet, MarkdownRenderer.ToHtml(markdown));
+    }
+
+    [Theory]
+    [InlineData("/bilder/a.png", false)]
+    [InlineData("a.png", false)]
+    [InlineData("../a.png?x=1#y", false)]
+    [InlineData("https://fremd.example/a.png", true)]
+    [InlineData("//fremd.example/a.png", true)]
+    [InlineData("/\\fremd.example/a.png", true)]
+    [InlineData("\\\\fremd.example/a.png", true)]
+    [InlineData("/\t/fremd.example/a.png", true)]
+    [InlineData("data:image/png;base64,AAAA", true)]
+    public void IsExternal_RecognisesAddressesOutsideTheOwnServer(string url, bool fremd)
+    {
+        Assert.Equal(fremd, MarkdownRenderer.IsExternal(url));
+    }
+
+    [Theory]
     [InlineData("[x](javascript:alert(1))")]
     [InlineData("Text {onclick=alert(1)}")]
     [InlineData("<script>alert(1)</script>")]
