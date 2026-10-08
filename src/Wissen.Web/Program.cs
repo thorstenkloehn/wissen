@@ -29,6 +29,28 @@ if (!builder.Configuration.GetValue<bool>("RegistrierungErlaubt"))
 
 var app = builder.Build();
 
+// Sicherheits-Header für jede Antwort. Die Content-Security-Policy erlaubt Skripte nur aus
+// eigenen Dateien: Inline-Skripte und onclick-Attribute in Views werden vom Browser blockiert.
+var contentSecurityPolicy = string.Join("; ",
+    "default-src 'self'",
+    "img-src 'self' data: https:",
+    "style-src 'self' 'unsafe-inline'",
+    // Hot Reload (dotnet watch) spricht in der Entwicklung über WebSockets mit dem Browser.
+    app.Environment.IsDevelopment() ? "connect-src 'self' ws://localhost:* wss://localhost:*" : "connect-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'self'");
+app.Use(async (context, next) =>
+{
+    var headers = context.Response.Headers;
+    headers.ContentSecurityPolicy = contentSecurityPolicy;
+    headers.XContentTypeOptions = "nosniff";
+    headers.XFrameOptions = "SAMEORIGIN";
+    headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    await next();
+});
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
