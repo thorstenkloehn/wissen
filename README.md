@@ -75,6 +75,34 @@ Die Vorlagen in `deploy/` gehen von einem eigenen Linux-Server mit systemd aus: 
 
 7. Für das erste Konto in `/etc/wissen/wissen.env` vorübergehend `RegistrierungErlaubt='true'` setzen, `sudo systemctl restart wissen`, registrieren und bestätigen, dann wieder auf `false` stellen und neu starten.
 
+### Automatische Sicherung
+
+`deploy/wissen-backup.service` und `deploy/wissen-backup.timer` nach `/etc/systemd/system/` kopieren und den Timer einschalten:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now wissen-backup.timer
+sudo systemctl start wissen-backup    # einmal sofort sichern
+systemctl status wissen-backup        # Ergebnis ansehen
+systemctl list-timers wissen-backup   # nächster Lauf
+```
+
+Die Sicherung läuft jede Nacht gegen 3 Uhr und legt eine Datei `wissen-<Zeitstempel>.dump` in `/var/lib/wissen/backups` ab; Sicherungen, die älter als 30 Tage sind, werden gelöscht. Die Dateien enthalten alle Artikel, Versionen und Konten.
+
+Diese Sicherungen liegen auf demselben Server wie die Datenbank und schützen nicht vor dessen Verlust. Deshalb regelmäßig auf einen anderen Rechner holen, zum Beispiel:
+
+```bash
+rsync -a --rsync-path="sudo rsync" BENUTZER@IHRE-DOMAIN.de:/var/lib/wissen/backups/ ~/wissen-backups/
+```
+
+Wiederherstellen (überschreibt die Datenbank):
+
+```bash
+sudo systemctl stop wissen
+sudo sh -c 'set -a; . /etc/wissen/wissen.env; dotnet /opt/wissen/cli/Wissen.Cli.dll restore /var/lib/wissen/backups/DATEI.dump'
+sudo systemctl start wissen
+```
+
 ## Sicherung und Wiederherstellung
 
 ```bash
@@ -106,7 +134,7 @@ dotnet run --project src/Wissen.Cli -- restore sicherung.dump
 | `src/Wissen.Infrastructure/` | Datenzugriff: `ApplicationDbContext`, EF-Core-Migrationen für PostgreSQL, Datenbanksicherung |
 | `src/Wissen.Cli/` | Konsolenanwendung; jeder Befehl ist ein Modul in `Modules/` |
 | `tests/Wissen.Tests/` | xUnit-Tests |
-| `deploy/` | Vorlagen für den Server: systemd-Dienst, Umgebungsdatei, Caddyfile |
+| `deploy/` | Vorlagen für den Server: systemd-Dienst, Umgebungsdatei, Caddyfile, tägliche Sicherung |
 | `Dokument/` | Arbeitsbericht als mdBook, siehe [Dokument/README.md](Dokument/README.md) |
 
 ## Lizenz

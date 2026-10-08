@@ -26,6 +26,8 @@ public class BackupModule(DatabaseBackup backup) : ICommandModule
         var exitCode = await backup.BackupAsync(file, cancellationToken);
         if (exitCode != 0)
         {
+            // pg_dump legt die Datei schon vor dem Verbindungsaufbau an; eine leere Datei sähe wie eine Sicherung aus.
+            File.Delete(file);
             Console.Error.WriteLine($"Die Sicherung ist fehlgeschlagen (pg_dump, Exit-Code {exitCode}).");
             return exitCode;
         }

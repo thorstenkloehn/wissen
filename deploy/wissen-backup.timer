@@ -1,0 +1,12 @@
+# Startet wissen-backup.service jede Nacht gegen 3 Uhr.
+[Unit]
+Description=wissen: tägliche Sicherung der Datenbank
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+RandomizedDelaySec=15min
+# War der Server um 3 Uhr aus, wird die Sicherung nach dem Start nachgeholt.
+Persistent=true
+
+[Install]
+WantedBy=timers.target
