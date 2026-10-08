@@ -17,7 +17,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<Seite>(seite =>
         {
             seite.ToTable("Seiten");
-            seite.Property(s => s.Path).HasMaxLength(500);
+            seite.Property(s => s.Path).HasMaxLength(Seite.MaxPathLength);
             seite.Property(s => s.Kategorie).HasMaxLength(200);
             seite.HasIndex(s => s.Path).IsUnique();
             seite.HasIndex(s => s.Kategorie);

@@ -8,7 +8,7 @@
 {
     <h1>@ViewData["Title"]</h1>
     <p>Zu „@ViewData["Path"]“ gibt es noch keine Seite.</p>
-    @if (angemeldet)
+    @if (angemeldet && ViewData["PfadGueltig"] is true)
     {
         <p><a asp-controller="Seite" asp-action="Neu" asp-route-path="@ViewData["Path"]">Seite anlegen</a></p>
     }

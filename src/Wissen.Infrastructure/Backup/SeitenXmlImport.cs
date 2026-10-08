@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Microsoft.EntityFrameworkCore;
 using Wissen.Infrastructure.Data;
@@ -12,11 +11,8 @@ public record SeitenXmlImportResult(int Neu, int Ersetzt);
 // Liest eine mit SeitenXmlExport geschriebene Datei wieder ein. Schlüssel ist der Pfad:
 // Eine vorhandene Seite mit demselben Pfad wird samt Versionsgeschichte ersetzt, andere Seiten
 // bleiben unberührt. Die Ids aus der Datei werden nicht übernommen.
-public partial class SeitenXmlImport(ApplicationDbContext db)
+public class SeitenXmlImport(ApplicationDbContext db)
 {
-    [GeneratedRegex("^" + Seite.PathSegment + "(/" + Seite.PathSegment + ")*$")]
-    private static partial Regex PathPattern();
-
     // Prüft die Datei und erzeugt die Seiten; das HTML entsteht neu aus dem Markdown.
     public IReadOnlyList<Seite> Read(XDocument document)
     {
@@ -29,7 +25,7 @@ public partial class SeitenXmlImport(ApplicationDbContext db)
         foreach (var element in document.Root.Elements("seite"))
         {
             var path = Required(element, "path", "einer Seite").Trim();
-            if (path.Length > 500 || !PathPattern().IsMatch(path))
+            if (!Seite.IsValidPath(path))
             {
                 throw new FormatException($"Der Pfad »{path}« ist ungültig.");
             }

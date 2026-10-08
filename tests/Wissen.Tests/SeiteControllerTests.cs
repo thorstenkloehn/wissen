@@ -244,6 +244,48 @@ public class SeiteControllerTests
         Assert.Empty(seite.Versionen);
     }
 
+    [Fact]
+    public async Task Doc_AnswersMissingPageWith404()
+    {
+        using var db = CreateContext();
+
+        var result = Assert.IsType<ViewResult>(await CreateDocController(db, angemeldet: true).HandleAll("doc/fehlt"));
+
+        Assert.Equal(404, result.StatusCode);
+        Assert.Null(result.Model);
+        Assert.Equal(true, result.ViewData["PfadGueltig"]);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("wp-login.php")]
+    [InlineData(".env")]
+    [InlineData("doc/")]
+    [InlineData("doc//x")]
+    public async Task Doc_AnswersInvalidPathWith404WithoutAskingTheDatabase(string? path)
+    {
+        // Ein Zugriff auf die Datenbank würde hier scheitern: Der Kontext ist schon freigegeben.
+        var db = CreateContext();
+        db.Dispose();
+
+        var result = Assert.IsType<ViewResult>(await CreateDocController(db, angemeldet: false).HandleAll(path));
+
+        Assert.Equal(404, result.StatusCode);
+        Assert.Equal(false, result.ViewData["PfadGueltig"]);
+    }
+
+    [Fact]
+    public async Task Doc_AnswersExistingPageWithoutStatus()
+    {
+        using var db = CreateContext();
+        db.Seiten.Add(new Seite { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "x" });
+        await db.SaveChangesAsync();
+
+        var result = Assert.IsType<ViewResult>(await CreateDocController(db, angemeldet: false).HandleAll("doc/x"));
+
+        Assert.Null(result.StatusCode);
+    }
+
     private static docController CreateDocController(ApplicationDbContext db, bool angemeldet) =>
         new(db)
         {
