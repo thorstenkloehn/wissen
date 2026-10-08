@@ -14,6 +14,19 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.Requ
     .AddErrorDescriber<GermanIdentityErrorDescriber>();
 builder.Services.AddControllersWithViews();
 
+// Ohne "RegistrierungErlaubt": true kann sich niemand selbst ein Konto anlegen.
+if (!builder.Configuration.GetValue<bool>("RegistrierungErlaubt"))
+{
+    builder.Services.AddRazorPages(options =>
+    {
+        foreach (var page in new[] { "/Account/Register", "/Account/RegisterConfirmation" })
+        {
+            options.Conventions.AddAreaPageApplicationModelConvention("Identity", page,
+                model => model.Filters.Add(new RegistrierungGesperrtFilter()));
+        }
+    });
+}
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

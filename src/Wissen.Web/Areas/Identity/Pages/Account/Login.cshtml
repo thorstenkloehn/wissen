@@ -1,5 +1,6 @@
 ﻿@page
 @model LoginModel
+@inject IConfiguration Configuration
 
 @{
     ViewData["Title"] = "Anmelden";
@@ -36,9 +37,12 @@
                     <p>
                         <a id="forgot-password" asp-page="./ForgotPassword">Passwort vergessen?</a>
                     </p>
-                    <p>
-                        <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl">Als neuer Benutzer registrieren</a>
-                    </p>
+                    @if (Configuration.GetValue<bool>("RegistrierungErlaubt"))
+                    {
+                        <p>
+                            <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl">Als neuer Benutzer registrieren</a>
+                        </p>
+                    }
                     <p>
                         <a id="resend-confirmation" asp-page="./ResendEmailConfirmation">Bestätigungs-E-Mail erneut senden</a>
                     </p>
