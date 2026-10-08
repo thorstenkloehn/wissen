@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Wissen.Infrastructure.Data;
+using Wissen.Infrastructure.Identity;
 using Wissen.Infrastructure.Models;
 using Wissen.Infrastructure.Rendering;
 using Wissen.Web.Models;
@@ -102,6 +103,8 @@ public class SeiteController(ApplicationDbContext db) : Controller
         return RedirectToSeite(seite.Path);
     }
 
+    // Löschen entfernt auch die Versionsgeschichte und lässt sich nicht zurücknehmen.
+    [Authorize(Roles = Rollen.Administrator)]
     [HttpGet("loeschen/{id:int}")]
     public async Task<IActionResult> Loeschen(int id)
     {
@@ -115,6 +118,7 @@ public class SeiteController(ApplicationDbContext db) : Controller
         return View(seite);
     }
 
+    [Authorize(Roles = Rollen.Administrator)]
     [HttpPost("loeschen/{id:int}")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> LoeschenBestaetigt(int id)

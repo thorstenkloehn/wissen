@@ -20,8 +20,9 @@ try
     var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings { ContentRootPath = AppContext.BaseDirectory });
     builder.Configuration["Logging:LogLevel:Default"] = "Warning";
     builder.Services.AddInfrastructure(builder.Configuration);
-    // Für konto-anlegen: dieselben Passwortregeln und Fehlermeldungen wie in der Web-App.
+    // Für konto-anlegen und konto-admin: dieselben Passwortregeln und Fehlermeldungen wie in der Web-App.
     builder.Services.AddIdentityCore<IdentityUser>()
+        .AddRoles<IdentityRole>()
         .AddEntityFrameworkStores<ApplicationDbContext>()
         .AddErrorDescriber<GermanIdentityErrorDescriber>();
 
@@ -32,6 +33,7 @@ try
     builder.Services.AddScoped<ICommandModule, RestoreXmlModule>();
     builder.Services.AddScoped<ICommandModule, MigrateModule>();
     builder.Services.AddScoped<ICommandModule, KontoAnlegenModule>();
+    builder.Services.AddScoped<ICommandModule, KontoAdminModule>();
 
     using var host = builder.Build();
     using var scope = host.Services.CreateScope();

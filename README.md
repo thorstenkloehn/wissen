@@ -36,10 +36,10 @@ Die Anwendung läuft dann unter <http://localhost:5227> (Profil `https`: <https:
 Die Registrierung im Browser ist abgeschaltet. Ein Konto legt die Konsolenanwendung an; das Passwort wird dabei abgefragt und nicht angezeigt:
 
 ```bash
-dotnet run --project src/Wissen.Cli -- konto-anlegen name@example.org
+dotnet run --project src/Wissen.Cli -- konto-anlegen name@example.org --admin
 ```
 
-Das Konto kann sich sofort anmelden. Ein E-Mail-Versand ist nicht eingerichtet; ein im Browser registriertes Konto (`"RegistrierungErlaubt": true`) ließe sich deshalb nicht bestätigen.
+Das Konto kann sich sofort anmelden. Mit `--admin` darf es Seiten löschen; ohne die Angabe darf es Seiten nur anlegen, bearbeiten und zurücksetzen. Einem vorhandenen Konto gibt `konto-admin name@example.org` die Rolle, `konto-admin name@example.org --entziehen` nimmt sie wieder weg; beides gilt ab der nächsten Anmeldung. Ein E-Mail-Versand ist nicht eingerichtet; ein im Browser registriertes Konto (`"RegistrierungErlaubt": true`) ließe sich deshalb nicht bestätigen.
 
 ## Veröffentlichen auf einem Server
 
@@ -82,7 +82,7 @@ Die Vorlagen in `deploy/` gehen von einem eigenen Linux-Server mit systemd aus: 
 7. Das erste Konto anlegen; das Passwort wird abgefragt:
 
    ```bash
-   sudo sh -c 'set -a; . /etc/wissen/wissen.env; dotnet /opt/wissen/cli/Wissen.Cli.dll konto-anlegen name@example.org'
+   sudo sh -c 'set -a; . /etc/wissen/wissen.env; dotnet /opt/wissen/cli/Wissen.Cli.dll konto-anlegen name@example.org --admin'
    ```
 
 ### Automatische Sicherung
@@ -205,7 +205,8 @@ Was der Befehl in welchem Fall meldet:
 | `dotnet run --project src/Wissen.Cli -- help` | Befehle der Konsolenanwendung anzeigen |
 | `dotnet ef migrations add <Name> --project src/Wissen.Infrastructure --startup-project src/Wissen.Web` | neue Migration erzeugen |
 | `dotnet run --project src/Wissen.Cli -- migrate` | Migrationen auf PostgreSQL anwenden |
-| `dotnet run --project src/Wissen.Cli -- konto-anlegen <E-Mail>` | Konto anlegen, das sich sofort anmelden kann |
+| `dotnet run --project src/Wissen.Cli -- konto-anlegen <E-Mail> [--admin]` | Konto anlegen, das sich sofort anmelden kann |
+| `dotnet run --project src/Wissen.Cli -- konto-admin <E-Mail> [--entziehen]` | Rolle Administrator (darf Seiten löschen) geben oder wegnehmen |
 | `mdbook serve Dokument --open` | Arbeitsbericht unter <http://localhost:3000> ansehen |
 
 ## Aufbau

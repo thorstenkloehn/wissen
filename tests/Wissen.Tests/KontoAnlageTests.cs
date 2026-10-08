@@ -16,6 +16,7 @@ public class KontoAnlageTests
         services.AddLogging();
         services.AddDbContext<ApplicationDbContext>(options => options.UseInMemoryDatabase(name));
         services.AddIdentityCore<IdentityUser>()
+            .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddErrorDescriber<GermanIdentityErrorDescriber>();
         services.AddScoped<KontoAnlage>();
@@ -52,6 +53,39 @@ public class KontoAnlageTests
         Assert.False(result.Succeeded);
         Assert.Contains(result.Errors, e => e.Description.Contains(meldung));
         Assert.Empty(services.GetRequiredService<ApplicationDbContext>().Users);
+    }
+
+    [Fact]
+    public async Task Anlegen_GivesAdministratorRoleOnlyOnRequest()
+    {
+        using var services = CreateServices();
+        var konten = services.GetRequiredService<KontoAnlage>();
+        var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
+
+        Assert.True((await konten.AnlegenAsync("anna@example.org", "Geheim-123")).Succeeded);
+        Assert.True((await konten.AnlegenAsync("chef@example.org", "Geheim-123", administrator: true)).Succeeded);
+
+        Assert.False(await userManager.IsInRoleAsync((await userManager.FindByEmailAsync("anna@example.org"))!, Rollen.Administrator));
+        Assert.True(await userManager.IsInRoleAsync((await userManager.FindByEmailAsync("chef@example.org"))!, Rollen.Administrator));
+    }
+
+    [Fact]
+    public async Task AdministratorSetzen_GrantsAndRevokesRole()
+    {
+        using var services = CreateServices();
+        var konten = services.GetRequiredService<KontoAnlage>();
+        var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
+        await konten.AnlegenAsync("anna@example.org", "Geheim-123");
+
+        Assert.Null(await konten.AdministratorSetzenAsync("niemand@example.org", true));
+
+        Assert.True((await konten.AdministratorSetzenAsync(" anna@example.org ", true))!.Succeeded);
+        Assert.True((await konten.AdministratorSetzenAsync("anna@example.org", true))!.Succeeded);
+        var user = (await userManager.FindByEmailAsync("anna@example.org"))!;
+        Assert.True(await userManager.IsInRoleAsync(user, Rollen.Administrator));
+
+        Assert.True((await konten.AdministratorSetzenAsync("anna@example.org", false))!.Succeeded);
+        Assert.False(await userManager.IsInRoleAsync(user, Rollen.Administrator));
     }
 
     [Fact]

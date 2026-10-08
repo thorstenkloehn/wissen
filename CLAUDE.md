@@ -7,8 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Die Solution `wissen.slnx` fasst vier Projekte zusammen (.NET 10):
 
 - `src/Wissen.Web` ist die ASP.NET-Core-MVC-Anwendung (Controller, Views, Identity-Seiten, `Program.cs`).
-- `src/Wissen.Infrastructure` ist die Klassenbibliothek für den Datenzugriff: `ApplicationDbContext` (`Data/`), die EF-Core-Migrationen (`Migrations/`), `DatabaseBackup` (`Backup/`) sowie `KontoAnlage` und `GermanIdentityErrorDescriber` (`Identity/`). `AddInfrastructure()` in `DependencyInjection.cs` verdrahtet das für Web-App und Konsolenanwendung gemeinsam.
-- `src/Wissen.Cli` ist die Konsolenanwendung mit den Befehlen `backup`, `backup-xml`, `restore`, `restore-xml`, `migrate` und `konto-anlegen`.
+- `src/Wissen.Infrastructure` ist die Klassenbibliothek für den Datenzugriff: `ApplicationDbContext` (`Data/`), die EF-Core-Migrationen (`Migrations/`), `DatabaseBackup` (`Backup/`) sowie `KontoAnlage`, `Rollen` und `GermanIdentityErrorDescriber` (`Identity/`). `AddInfrastructure()` in `DependencyInjection.cs` verdrahtet das für Web-App und Konsolenanwendung gemeinsam.
+- `src/Wissen.Cli` ist die Konsolenanwendung mit den Befehlen `backup`, `backup-xml`, `restore`, `restore-xml`, `migrate`, `konto-anlegen` und `konto-admin`.
 - `tests/Wissen.Tests` enthält die xUnit-Tests.
 - `./Dokument` ist ein mdBook-Arbeitsbericht. **Der Inhalt stammt vom Nutzer:** Er schreibt Rohtexte in `Dokument/RAW`, Claude macht daraus fertige Artikel und korrigiert dabei nur Rechtschreibung und Grammatik, ohne etwas hinzuzudichten. Der genaue Ablauf steht in `Dokument/CLAUDE.md`; vor jeder Arbeit in `Dokument` dort nachlesen.
 
@@ -25,7 +25,8 @@ dotnet run --project src/Wissen.Cli -- backup [Datei]  # Sicherung, Standard: ba
 dotnet run --project src/Wissen.Cli -- backup-xml [Datei] # Seiten mit Versionsgeschichte als XML, Standard: backups/seiten-<Zeitstempel>.xml
 dotnet run --project src/Wissen.Cli -- restore-xml <Datei> # XML-Sicherung einlesen, ersetzt Seiten mit gleichem Pfad (--ja: ohne Rückfrage)
 dotnet run --project src/Wissen.Cli -- restore <Datei> # Wiederherstellung, überschreibt die Datenbank (--ja: ohne Rückfrage)
-dotnet run --project src/Wissen.Cli -- konto-anlegen <E-Mail> # Konto anlegen, das sich sofort anmelden kann; fragt das Passwort ab
+dotnet run --project src/Wissen.Cli -- konto-anlegen <E-Mail> [--admin] # Konto anlegen, das sich sofort anmelden kann; fragt das Passwort ab
+dotnet run --project src/Wissen.Cli -- konto-admin <E-Mail> [--entziehen] # Rolle Administrator geben oder wegnehmen
 dotnet ef migrations add <Name> --project src/Wissen.Infrastructure --startup-project src/Wissen.Web   # neue Migration
 dotnet ef database update --project src/Wissen.Infrastructure --startup-project src/Wissen.Web         # Migrationen anwenden
 mdbook serve Dokument --open             # Arbeitsbericht unter http://localhost:3000
@@ -41,7 +42,7 @@ Jeder Befehl ist ein Modul: eine Klasse in `src/Wissen.Cli/Modules`, die `IComma
 
 `backup-xml` schreibt über `SeitenXmlExport` (`src/Wissen.Infrastructure/Backup/`) nur die Seiten: Id, Pfad, Kategorie, Markdown und alle Versionen, ohne das erzeugte HTML und ohne Konten. `restore-xml` liest die Datei über `SeitenXmlImport` wieder ein: Schlüssel ist der Pfad, eine vorhandene Seite behält ihre Id und bekommt Inhalt und Versionsgeschichte aus der Datei, Seiten, die nicht in der Datei stehen, bleiben unberührt; die Ids aus der Datei werden nicht übernommen. Das HTML entsteht dabei neu über `MarkdownRenderer` (`src/Wissen.Infrastructure/Rendering/`, Markdig plus HtmlSanitizer), den auch der `SeiteController` benutzt. Der Sanitizer lässt nur die Klassen durch, die Markdig selbst erzeugt (`MarkdigClasses`, dazu `language-*`), und als Stil nur `text-align`; frei gewählte Klassen und Stile (`{.klasse}`, `{style=...}`, `:::klasse`) werden entfernt, weil sich damit die ganze Seite überdecken ließe. Konten stehen nicht in der XML-Datei; vollständig wiederherstellen lässt sich nur aus einer `backup`-Sicherung.
 
-`konto-anlegen` legt über `KontoAnlage` ein Konto mit bestätigter E-Mail-Adresse an (Benutzername ist die E-Mail-Adresse). Das Passwort wird ohne Anzeige abgefragt oder aus einer Pipe gelesen, nie als Argument übergeben. `Program.cs` der Konsolenanwendung meldet dafür `AddIdentityCore` mit denselben Passwortregeln und deutschen Fehlermeldungen wie die Web-App an.
+`konto-anlegen` legt über `KontoAnlage` ein Konto mit bestätigter E-Mail-Adresse an (Benutzername ist die E-Mail-Adresse). Das Passwort wird ohne Anzeige abgefragt oder aus einer Pipe gelesen, nie als Argument übergeben. `Program.cs` der Konsolenanwendung meldet dafür `AddIdentityCore` mit denselben Passwortregeln und deutschen Fehlermeldungen wie die Web-App an. `konto-anlegen --admin` und `konto-admin` vergeben die Rolle `Rollen.Administrator`; die Rolle wird beim ersten Vergeben angelegt, und eine Änderung gilt erst ab der nächsten Anmeldung des Kontos.
 
 `AddInfrastructure()` setzt `IdentityOptions.Stores.MaxLengthForKeys = 128`, denselben Wert wie die Identity-Oberfläche der Web-App. Ohne ihn hätte die Konsolenanwendung ein anderes Modell als die Migrationen, und `migrate` bräche auf einer leeren Datenbank mit „pending model changes“ ab.
 
@@ -68,6 +69,7 @@ Ausgangspunkt ist die Vorlage `dotnet new mvc --auth Individual`; alles wird in 
 - **Registrierung abgeschaltet:** Ohne `"RegistrierungErlaubt": true` in `appsettings.json` antworten `/Identity/Account/Register` und `/Identity/Account/RegisterConfirmation` mit 404 (`RegistrierungGesperrtFilter`, in `Program.cs` angemeldet) und die Links dorthin sind ausgeblendet. Konten legt die Konsolenanwendung an (`konto-anlegen`); die Registrierung muss dafür nie geöffnet werden.
 - **Bestätigte Konten erforderlich:** `SignIn.RequireConfirmedAccount = true`, es ist aber kein echter E-Mail-Versand eingerichtet. `RegisterConfirmation` zeigt den Bestätigungslink bewusst nicht mehr an (damit konnte jeder Besucher sein Konto selbst bestätigen); ein im Browser registriertes Konto kann sich deshalb nicht anmelden, solange kein E-Mail-Versand eingerichtet ist.
 - **Länge des Inhalts:** Das Markdown einer Seite ist in beiden Formularen auf `Seite.MaxMarkdownLength` (200 000 Zeichen) begrenzt. `restore-xml` prüft die Grenze nicht.
+- **Rollen:** Jedes angemeldete Konto darf Seiten anlegen, bearbeiten und zurücksetzen. Löschen (samt Versionsgeschichte, nicht umkehrbar) verlangt die Rolle `Rollen.Administrator` (`[Authorize(Roles = ...)]` an beiden `Loeschen`-Aktionen); der Link ist für andere ausgeblendet. Die Rolle vergibt nur die Konsolenanwendung, in der Web-App gibt es dafür keine Oberfläche.
 - **Kontosperre:** Die Login-Seite ruft `PasswordSignInAsync` mit `lockoutOnFailure: true` auf (Standard von Identity: 5 Fehlversuche, 5 Minuten Sperre).
 - **Sicherheits-Header:** Eine Middleware am Anfang von `Program.cs` setzt für jede Antwort `Content-Security-Policy`, `X-Content-Type-Options`, `X-Frame-Options` und `Referrer-Policy`. Skripte sind nur aus eigenen Dateien erlaubt: keine Inline-Skripte, keine `onclick`-Attribute und keine Skripte von fremden Servern in Views verwenden, sonst blockiert sie der Browser.
 - **Statische Dateien:** `MapStaticAssets()` / `.WithStaticAssets()` (Build-Zeit-Fingerprinting) statt `UseStaticFiles`; Client-Bibliotheken liegen unter `wwwroot/lib`.
