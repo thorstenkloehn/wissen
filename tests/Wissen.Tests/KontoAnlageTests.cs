@@ -101,4 +101,57 @@ public class KontoAnlageTests
         Assert.Contains(result.Errors, e => e.Code == nameof(IdentityErrorDescriber.DuplicateEmail));
         Assert.Single(services.GetRequiredService<ApplicationDbContext>().Users);
     }
+
+    [Fact]
+    public async Task PasswortSetzen_ReplacesPasswordAndEndsSessions()
+    {
+        using var services = CreateServices();
+        var konten = services.GetRequiredService<KontoAnlage>();
+        var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
+        await konten.AnlegenAsync("anna@example.org", "Geheim-123");
+        var stempel = (await userManager.FindByEmailAsync("anna@example.org"))!.SecurityStamp;
+
+        Assert.Null(await konten.PasswortSetzenAsync("niemand@example.org", "Geheim-456"));
+        Assert.True((await konten.PasswortSetzenAsync(" anna@example.org ", "Geheim-456"))!.Succeeded);
+
+        var user = (await userManager.FindByEmailAsync("anna@example.org"))!;
+        Assert.True(await userManager.CheckPasswordAsync(user, "Geheim-456"));
+        Assert.False(await userManager.CheckPasswordAsync(user, "Geheim-123"));
+        Assert.NotEqual(stempel, user.SecurityStamp);
+    }
+
+    [Fact]
+    public async Task PasswortSetzen_KeepsOldPasswordWhenTheNewOneIsRejected()
+    {
+        using var services = CreateServices();
+        var konten = services.GetRequiredService<KontoAnlage>();
+        var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
+        await konten.AnlegenAsync("anna@example.org", "Geheim-123");
+
+        var result = await konten.PasswortSetzenAsync("anna@example.org", "kurz");
+
+        Assert.False(result!.Succeeded);
+        var user = (await userManager.FindByEmailAsync("anna@example.org"))!;
+        Assert.True(await userManager.CheckPasswordAsync(user, "Geheim-123"));
+    }
+
+    [Fact]
+    public async Task Sperren_LocksAccountAndEndsSessionsUntilUnlocked()
+    {
+        using var services = CreateServices();
+        var konten = services.GetRequiredService<KontoAnlage>();
+        var userManager = services.GetRequiredService<UserManager<IdentityUser>>();
+        await konten.AnlegenAsync("anna@example.org", "Geheim-123");
+        var stempel = (await userManager.FindByEmailAsync("anna@example.org"))!.SecurityStamp;
+
+        Assert.Null(await konten.SperrenAsync("niemand@example.org", true));
+        Assert.True((await konten.SperrenAsync(" anna@example.org ", true))!.Succeeded);
+
+        var user = (await userManager.FindByEmailAsync("anna@example.org"))!;
+        Assert.True(await userManager.IsLockedOutAsync(user));
+        Assert.NotEqual(stempel, user.SecurityStamp);
+
+        Assert.True((await konten.SperrenAsync("anna@example.org", false))!.Succeeded);
+        Assert.False(await userManager.IsLockedOutAsync(user));
+    }
 }

@@ -34,6 +34,8 @@ try
     builder.Services.AddScoped<ICommandModule, MigrateModule>();
     builder.Services.AddScoped<ICommandModule, KontoAnlegenModule>();
     builder.Services.AddScoped<ICommandModule, KontoAdminModule>();
+    builder.Services.AddScoped<ICommandModule, KontoPasswortModule>();
+    builder.Services.AddScoped<ICommandModule, KontoSperrenModule>();
 
     using var host = builder.Build();
     using var scope = host.Services.CreateScope();

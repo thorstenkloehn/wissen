@@ -19,4 +19,9 @@ public class SeitenVersion
     public string Kategorie { get; set; } = string.Empty;
 
     public DateTime ErstelltAm { get; set; } = DateTime.UtcNow;
+
+    // Benutzername (E-Mail-Adresse) des Kontos, das diesen Stand gespeichert hat. Als Text und nicht
+    // als Verweis auf das Konto, damit die Angabe ein gelöschtes Konto überdauert. Leer bei Versionen
+    // aus der Zeit vor dieser Angabe.
+    public string? Autor { get; set; }
 }

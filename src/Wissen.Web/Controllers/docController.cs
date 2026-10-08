@@ -23,7 +23,7 @@ namespace Wissen.Web.Controllers
                     .AsNoTracking()
                     .Where(v => v.SeiteId == seite.Id)
                     .OrderByDescending(v => v.Nummer)
-                    .Select(v => new SeitenVersion { Nummer = v.Nummer, Kategorie = v.Kategorie, ErstelltAm = v.ErstelltAm })
+                    .Select(v => new SeitenVersion { Nummer = v.Nummer, Kategorie = v.Kategorie, ErstelltAm = v.ErstelltAm, Autor = v.Autor })
                     .ToListAsync();
             }
 

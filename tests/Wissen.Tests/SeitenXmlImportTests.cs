@@ -24,7 +24,7 @@ public class SeitenXmlImportTests
                 <kategorie>Allgemein</kategorie>
                 <markdown>alt</markdown>
               </version>
-              <version nummer="2" erstelltAm="2026-10-08T15:11:00Z">
+              <version nummer="2" erstelltAm="2026-10-08T15:11:00Z" autor="anna@example.org">
                 <kategorie>Technik</kategorie>
                 <markdown># Neu</markdown>
               </version>
@@ -111,6 +111,17 @@ public class SeitenXmlImportTests
         Assert.Equal(
             exportiert.Root!.Elements("seite").Select(s => s.ToString()),
             erneut.Root!.Elements("seite").Select(s => s.ToString()));
+    }
+
+    [Fact]
+    public void Read_TakesAuthorWhereTheFileNamesOne()
+    {
+        using var db = CreateContext();
+
+        var seite = Assert.Single(new SeitenXmlImport(db).Read(XDocument.Parse(Xml)));
+
+        Assert.Null(seite.Versionen.Single(v => v.Nummer == 1).Autor);
+        Assert.Equal("anna@example.org", seite.Versionen.Single(v => v.Nummer == 2).Autor);
     }
 
     [Fact]

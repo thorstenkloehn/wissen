@@ -6,7 +6,7 @@
 <h1>@ViewData["Title"]</h1>
 <p>
     Früherer Stand der Seite <a href="/@Model.Seite.Path">@Model.Seite.Path</a>
-    vom @Model.ErstelltAm.ToLocalTime().ToString("dd.MM.yyyy HH:mm"), Kategorie: @Model.Kategorie
+    vom @Model.ErstelltAm.ToLocalTime().ToString("dd.MM.yyyy HH:mm") von @(Model.Autor ?? "unbekannt"), Kategorie: @Model.Kategorie
 </p>
 @if (Model.MarkdownInhalt != Model.Seite.MarkdownInhalt || Model.Kategorie != Model.Seite.Kategorie)
 {

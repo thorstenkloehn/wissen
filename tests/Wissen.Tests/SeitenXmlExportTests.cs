@@ -21,7 +21,7 @@ public class SeitenXmlExportTests
             Inhalt = "<h1>Neu</h1>",
             Versionen =
             [
-                new SeitenVersion { Nummer = 2, Kategorie = "Technik", MarkdownInhalt = "# Neu", ErstelltAm = new DateTime(2026, 10, 8, 15, 11, 0, DateTimeKind.Utc) },
+                new SeitenVersion { Nummer = 2, Kategorie = "Technik", MarkdownInhalt = "# Neu", Autor = "anna@example.org", ErstelltAm = new DateTime(2026, 10, 8, 15, 11, 0, DateTimeKind.Utc) },
                 new SeitenVersion { Nummer = 1, Kategorie = "Allgemein", MarkdownInhalt = "alt", ErstelltAm = new DateTime(2026, 10, 8, 15, 1, 0, DateTimeKind.Utc) },
             ],
         });
@@ -42,6 +42,8 @@ public class SeitenXmlExportTests
         Assert.Equal("alt", versionen[0].Element("markdown")!.Value);
         Assert.Equal("Allgemein", versionen[0].Element("kategorie")!.Value);
         Assert.Equal("2026-10-08T15:01:00Z", versionen[0].Attribute("erstelltAm")!.Value);
+        Assert.Null(versionen[0].Attribute("autor"));
+        Assert.Equal("anna@example.org", versionen[1].Attribute("autor")!.Value);
 
         // Das Dokument lässt sich als XML schreiben und wieder lesen.
         var gelesen = System.Xml.Linq.XDocument.Parse(document.ToString());

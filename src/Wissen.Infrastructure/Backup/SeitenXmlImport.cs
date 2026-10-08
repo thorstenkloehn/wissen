@@ -77,6 +77,7 @@ public partial class SeitenXmlImport(ApplicationDbContext db)
                     MarkdownInhalt = versionMarkdown,
                     Inhalt = ToHtml(versionMarkdown, $"der Version {nummer} der Seite »{path}«"),
                     ErstelltAm = erstelltAm,
+                    Autor = Autor(versionElement, nummer, path),
                 });
             }
 
@@ -145,6 +146,19 @@ public partial class SeitenXmlImport(ApplicationDbContext db)
 
     private static string Required(XElement element, string name, string ort) =>
         element.Element(name)?.Value ?? throw new FormatException($"Das Element <{name}> {ort} fehlt.");
+
+    // Das Attribut autor fehlt bei Versionen aus der Zeit vor dieser Angabe.
+    private static string? Autor(XElement versionElement, int nummer, string path)
+    {
+        var autor = versionElement.Attribute("autor")?.Value.Trim();
+        if (string.IsNullOrEmpty(autor))
+        {
+            return null;
+        }
+        return autor.Length <= 256
+            ? autor
+            : throw new FormatException($"Das Attribut autor der Version {nummer} der Seite »{path}« ist länger als 256 Zeichen.");
+    }
 
     private static string Kategorie(XElement element, string ort)
     {

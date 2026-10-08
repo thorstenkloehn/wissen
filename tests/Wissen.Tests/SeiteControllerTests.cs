@@ -304,6 +304,31 @@ public class SeiteControllerTests
         Assert.Equal("alt", seite.MarkdownInhalt);
         Assert.Single(seite.Versionen);
     }
+
+    private static SeiteController AngemeldetAls(ApplicationDbContext db, string name) =>
+        new(db)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext
+                {
+                    User = new ClaimsPrincipal(new ClaimsIdentity([new Claim(ClaimTypes.Name, name)], "Test")),
+                },
+            },
+        };
+
+    [Fact]
+    public async Task EveryVersionRecordsTheAccountThatSavedIt()
+    {
+        using var db = CreateContext();
+        await AngemeldetAls(db, "anna@example.org").Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "eins" });
+        var id = (await db.Seiten.SingleAsync()).Id;
+        await AngemeldetAls(db, "bert@example.org").Bearbeiten(id, new SeiteBearbeitenViewModel { Kategorie = "Allgemein", MarkdownInhalt = "zwei" });
+        await AngemeldetAls(db, "carla@example.org").Zuruecksetzen(id, 1);
+
+        var autoren = await db.SeitenVersionen.OrderBy(v => v.Nummer).Select(v => v.Autor).ToListAsync();
+        Assert.Equal(["anna@example.org", "bert@example.org", "carla@example.org"], autoren);
+    }
 }
 
 public class SeiteNeuViewModelTests

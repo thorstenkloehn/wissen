@@ -66,6 +66,7 @@ public class SeiteController(ApplicationDbContext db) : Controller
             Kategorie = kategorie,
             MarkdownInhalt = model.MarkdownInhalt!,
             Inhalt = inhalt,
+            Autor = User?.Identity?.Name,
         });
 
         db.Seiten.Add(seite);
@@ -197,7 +198,8 @@ public class SeiteController(ApplicationDbContext db) : Controller
         return RedirectToSeite(seite.Path);
     }
 
-    // Übernimmt Kategorie und Markdown in die Seite und hängt eine neue Version an.
+    // Übernimmt Kategorie und Markdown in die Seite und hängt eine neue Version an; als Autor gilt
+    // das angemeldete Konto, auch beim Zurücksetzen auf einen früheren Stand.
     // Ohne Änderung entsteht keine neue Version.
     private async Task AendereSeite(Seite seite, string kategorie, string markdownInhalt)
     {
@@ -223,6 +225,7 @@ public class SeiteController(ApplicationDbContext db) : Controller
             Kategorie = seite.Kategorie,
             MarkdownInhalt = seite.MarkdownInhalt,
             Inhalt = seite.Inhalt,
+            Autor = User?.Identity?.Name,
         });
         await db.SaveChangesAsync();
     }

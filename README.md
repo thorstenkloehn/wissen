@@ -41,6 +41,10 @@ dotnet run --project src/Wissen.Cli -- konto-anlegen name@example.org --admin
 
 Das Konto kann sich sofort anmelden. Mit `--admin` darf es Seiten löschen; ohne die Angabe darf es Seiten nur anlegen, bearbeiten und zurücksetzen. Einem vorhandenen Konto gibt `konto-admin name@example.org` die Rolle, `konto-admin name@example.org --entziehen` nimmt sie wieder weg; beides gilt ab der nächsten Anmeldung.
 
+Ein vergessenes Passwort setzt `konto-passwort name@example.org` neu (das Passwort wird abgefragt). `konto-sperren name@example.org` sperrt ein Konto, sodass es sich nicht mehr anmelden kann; `--aufheben` hebt die Sperre auf. In beiden Fällen wird abgemeldet, wer mit dem Konto noch angemeldet ist, spätestens nach 30 Minuten.
+
+Die Versionsgeschichte einer Seite zeigt zu jeder Version, welches Konto sie gespeichert hat.
+
 Je IP-Adresse sind 5 Anmeldeversuche in 5 Minuten möglich. Ein Konto wird nach 20 Fehlversuchen für 5 Minuten gesperrt. Ein E-Mail-Versand ist nicht eingerichtet; ein im Browser registriertes Konto (`"RegistrierungErlaubt": true`) ließe sich deshalb nicht bestätigen.
 
 ## Veröffentlichen auf einem Server
@@ -145,7 +149,7 @@ dotnet run --project src/Wissen.Cli -- backup-xml            # nach backups/seit
 dotnet run --project src/Wissen.Cli -- backup-xml seiten.xml # in eine bestimmte Datei
 ```
 
-Die Datei enthält je Seite Id, Pfad, Kategorie, Markdown und alle Versionen mit Nummer und Zeitpunkt (in UTC):
+Die Datei enthält je Seite Id, Pfad, Kategorie, Markdown und alle Versionen mit Nummer, Zeitpunkt (in UTC) und, soweit bekannt, dem Konto, das sie gespeichert hat (`autor`):
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -161,7 +165,7 @@ Willkommen auf meine Seite</markdown>
         <kategorie>Hauptseite</kategorie>
         <markdown>## start</markdown>
       </version>
-      <version nummer="2" erstelltAm="2026-10-08T15:11:27.135033Z">
+      <version nummer="2" erstelltAm="2026-10-08T15:11:27.135033Z" autor="name@example.org">
         <kategorie>Hauptseite</kategorie>
         <markdown>## start
 
@@ -172,7 +176,7 @@ Willkommen auf meine Seite</markdown>
 </seiten>
 ```
 
-Nicht enthalten sind die Konten und das erzeugte HTML; das HTML entsteht beim Einlesen neu aus dem Markdown.
+Nicht enthalten sind die Konten (nur die E-Mail-Adressen der Autoren) und das erzeugte HTML; das HTML entsteht beim Einlesen neu aus dem Markdown.
 
 Einlesen:
 
@@ -209,6 +213,8 @@ Was der Befehl in welchem Fall meldet:
 | `dotnet run --project src/Wissen.Cli -- migrate` | Migrationen auf PostgreSQL anwenden |
 | `dotnet run --project src/Wissen.Cli -- konto-anlegen <E-Mail> [--admin]` | Konto anlegen, das sich sofort anmelden kann |
 | `dotnet run --project src/Wissen.Cli -- konto-admin <E-Mail> [--entziehen]` | Rolle Administrator (darf Seiten löschen) geben oder wegnehmen |
+| `dotnet run --project src/Wissen.Cli -- konto-passwort <E-Mail>` | neues Passwort für ein Konto setzen |
+| `dotnet run --project src/Wissen.Cli -- konto-sperren <E-Mail> [--aufheben]` | Konto sperren oder Sperre aufheben |
 | `mdbook serve Dokument --open` | Arbeitsbericht unter <http://localhost:3000> ansehen |
 
 ## Aufbau

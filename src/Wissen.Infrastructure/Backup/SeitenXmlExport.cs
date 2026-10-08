@@ -31,6 +31,7 @@ public class SeitenXmlExport(ApplicationDbContext db)
                                 new XElement("version",
                                     new XAttribute("nummer", version.Nummer),
                                     new XAttribute("erstelltAm", version.ErstelltAm),
+                                    version.Autor is null ? null : new XAttribute("autor", Clean(version.Autor)),
                                     new XElement("kategorie", Clean(version.Kategorie)),
                                     new XElement("markdown", Clean(version.MarkdownInhalt)))))))));
     }

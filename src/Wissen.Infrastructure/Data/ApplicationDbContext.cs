@@ -27,6 +27,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             version.ToTable("SeitenVersionen");
             version.Property(v => v.Kategorie).HasMaxLength(200);
+            version.Property(v => v.Autor).HasMaxLength(256);
             version.HasIndex(v => new { v.SeiteId, v.Nummer }).IsUnique();
             version.HasOne(v => v.Seite)
                 .WithMany(s => s.Versionen)

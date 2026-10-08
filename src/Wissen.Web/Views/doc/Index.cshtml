@@ -33,7 +33,7 @@ else
             {
                 <li>
                     <a asp-controller="Seite" asp-action="Version" asp-route-id="@Model.Id" asp-route-nummer="@version.Nummer">Version @version.Nummer</a>
-                    vom @version.ErstelltAm.ToLocalTime().ToString("dd.MM.yyyy HH:mm"), Kategorie: @version.Kategorie
+                    vom @version.ErstelltAm.ToLocalTime().ToString("dd.MM.yyyy HH:mm") von @(version.Autor ?? "unbekannt"), Kategorie: @version.Kategorie
                 </li>
             }
         </ul>
