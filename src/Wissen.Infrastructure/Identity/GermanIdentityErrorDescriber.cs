@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 
-namespace Wissen.Web.Areas.Identity;
+namespace Wissen.Infrastructure.Identity;
 
 public class GermanIdentityErrorDescriber : IdentityErrorDescriber
 {

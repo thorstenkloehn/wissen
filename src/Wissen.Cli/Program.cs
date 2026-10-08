@@ -1,8 +1,11 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Wissen.Cli;
 using Wissen.Cli.Modules;
 using Wissen.Infrastructure;
+using Wissen.Infrastructure.Data;
+using Wissen.Infrastructure.Identity;
 
 using var cancellation = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) =>
@@ -17,6 +20,10 @@ try
     var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings { ContentRootPath = AppContext.BaseDirectory });
     builder.Configuration["Logging:LogLevel:Default"] = "Warning";
     builder.Services.AddInfrastructure(builder.Configuration);
+    // Für konto-anlegen: dieselben Passwortregeln und Fehlermeldungen wie in der Web-App.
+    builder.Services.AddIdentityCore<IdentityUser>()
+        .AddEntityFrameworkStores<ApplicationDbContext>()
+        .AddErrorDescriber<GermanIdentityErrorDescriber>();
 
     // Module der Konsolenanwendung; neue Module hier anmelden.
     builder.Services.AddScoped<ICommandModule, BackupModule>();
@@ -24,6 +31,7 @@ try
     builder.Services.AddScoped<ICommandModule, RestoreModule>();
     builder.Services.AddScoped<ICommandModule, RestoreXmlModule>();
     builder.Services.AddScoped<ICommandModule, MigrateModule>();
+    builder.Services.AddScoped<ICommandModule, KontoAnlegenModule>();
 
     using var host = builder.Build();
     using var scope = host.Services.CreateScope();

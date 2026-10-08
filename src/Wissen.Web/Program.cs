@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Wissen.Web.Areas.Identity;
 using Wissen.Infrastructure;
 using Wissen.Infrastructure.Data;
+using Wissen.Infrastructure.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 

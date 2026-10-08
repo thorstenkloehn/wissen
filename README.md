@@ -33,7 +33,13 @@ dotnet run --project src/Wissen.Web
 
 Die Anwendung läuft dann unter <http://localhost:5227> (Profil `https`: <https://localhost:7279>).
 
-Die Registrierung ist abgeschaltet. Um ein Konto anzulegen, in `src/Wissen.Web/appsettings.json` vorübergehend `"RegistrierungErlaubt": true` eintragen und neu starten. Ein E-Mail-Versand ist nicht eingerichtet; der Bestätigungslink wird nach der Registrierung direkt angezeigt. Danach den Eintrag wieder entfernen.
+Die Registrierung im Browser ist abgeschaltet. Ein Konto legt die Konsolenanwendung an; das Passwort wird dabei abgefragt und nicht angezeigt:
+
+```bash
+dotnet run --project src/Wissen.Cli -- konto-anlegen name@example.org
+```
+
+Das Konto kann sich sofort anmelden. Ein E-Mail-Versand ist nicht eingerichtet; ein im Browser registriertes Konto (`"RegistrierungErlaubt": true`) ließe sich deshalb nicht bestätigen.
 
 ## Veröffentlichen auf einem Server
 
@@ -73,7 +79,11 @@ Die Vorlagen in `deploy/` gehen von einem eigenen Linux-Server mit systemd aus: 
 
 6. `deploy/Caddyfile` nach `/etc/caddy/Caddyfile` kopieren, die Domain eintragen und `sudo systemctl reload caddy` ausführen.
 
-7. Für das erste Konto in `/etc/wissen/wissen.env` vorübergehend `RegistrierungErlaubt='true'` setzen, `sudo systemctl restart wissen`, registrieren und bestätigen, dann wieder auf `false` stellen und neu starten.
+7. Das erste Konto anlegen; das Passwort wird abgefragt:
+
+   ```bash
+   sudo sh -c 'set -a; . /etc/wissen/wissen.env; dotnet /opt/wissen/cli/Wissen.Cli.dll konto-anlegen name@example.org'
+   ```
 
 ### Automatische Sicherung
 
@@ -195,6 +205,7 @@ Was der Befehl in welchem Fall meldet:
 | `dotnet run --project src/Wissen.Cli -- help` | Befehle der Konsolenanwendung anzeigen |
 | `dotnet ef migrations add <Name> --project src/Wissen.Infrastructure --startup-project src/Wissen.Web` | neue Migration erzeugen |
 | `dotnet run --project src/Wissen.Cli -- migrate` | Migrationen auf PostgreSQL anwenden |
+| `dotnet run --project src/Wissen.Cli -- konto-anlegen <E-Mail>` | Konto anlegen, das sich sofort anmelden kann |
 | `mdbook serve Dokument --open` | Arbeitsbericht unter <http://localhost:3000> ansehen |
 
 ## Aufbau

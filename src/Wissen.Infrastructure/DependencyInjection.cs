@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Wissen.Infrastructure.Backup;
 using Wissen.Infrastructure.Data;
+using Wissen.Infrastructure.Identity;
 
 namespace Wissen.Infrastructure;
 
@@ -22,6 +23,7 @@ public static class DependencyInjection
         services.AddSingleton(new DatabaseBackup(connectionString));
         services.AddScoped<SeitenXmlExport>();
         services.AddScoped<SeitenXmlImport>();
+        services.AddScoped<KontoAnlage>();
         return services;
     }
 }
