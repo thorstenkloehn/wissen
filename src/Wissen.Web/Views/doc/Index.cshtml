@@ -1,6 +1,15 @@
-﻿@{
+﻿@model Wissen.Infrastructure.Models.Seite?
+@{
     ViewData["Title"] = "Dokumentation";
 }
 <h1>@ViewData["Title"]</h1>
 
-<p>Aufgerufener Pfad: @ViewData["Path"]</p>
+@if (Model is null)
+{
+    <p>Zu „@ViewData["Path"]“ gibt es noch keine Seite.</p>
+}
+else
+{
+    <p>Kategorie: @Model.Kategorie</p>
+    @Html.Raw(Model.Inhalt)
+}
