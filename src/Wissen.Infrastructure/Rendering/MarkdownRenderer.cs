@@ -25,13 +25,22 @@ public static class MarkdownRenderer
     // Die Sprache eines Codeblocks, z. B. language-csharp.
     private const string LanguageClassPrefix = "language-";
 
+    // Vorsatz für jedes id-Attribut im Inhalt, siehe CreateSanitizer.
+    public const string IdPrefix = "inhalt-";
+
     private static readonly HtmlSanitizer Sanitizer = CreateSanitizer();
 
     private static HtmlSanitizer CreateSanitizer()
     {
         var sanitizer = new HtmlSanitizer();
-        sanitizer.AllowedAttributes.Add("id");
         sanitizer.AllowedSchemes.Add("mailto");
+
+        // Im Browser ist jedes Element mit id (und manches mit name) auch als Variable gleichen Namens
+        // erreichbar: Mit {#getElementById} oder {name=cookie} ließen sich eingebaute Namen überdecken
+        // und die Skripte der Seite stören. Deshalb entfällt name, und jede id bekommt einen Vorsatz;
+        // Sprungziele innerhalb der Seite (Überschriften, Fußnoten) folgen in PostProcessNode.
+        sanitizer.AllowedAttributes.Add("id");
+        sanitizer.AllowedAttributes.Remove("name");
 
         // Frei wählbare Klassen und Stile ({.position-fixed}, {style=...}, :::klasse) könnten die ganze
         // Seite überdecken, etwa mit einem unsichtbaren Link. Erlaubt bleibt nur, was Markdig selbst
@@ -59,9 +68,21 @@ public static class MarkdownRenderer
         };
         sanitizer.PostProcessNode += (_, e) =>
         {
-            if (e.Node is IElement { LocalName: "img" } img && img.GetAttribute("src") is { } src && IsExternal(src))
+            if (e.Node is not IElement element)
             {
-                e.ReplacementNodes.Add(CreateImageLink(e.Document, img, src));
+                return;
+            }
+            if (element.GetAttribute("id") is { Length: > 0 } id)
+            {
+                element.SetAttribute("id", IdPrefix + id);
+            }
+            if (element.LocalName == "a" && element.GetAttribute("href") is ['#', _, ..] sprungziel)
+            {
+                element.SetAttribute("href", "#" + IdPrefix + sprungziel[1..]);
+            }
+            if (element.LocalName == "img" && element.GetAttribute("src") is { } src && IsExternal(src))
+            {
+                e.ReplacementNodes.Add(CreateImageLink(e.Document, element, src));
             }
         };
         return sanitizer;

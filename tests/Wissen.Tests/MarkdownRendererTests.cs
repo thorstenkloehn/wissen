@@ -43,7 +43,7 @@ public class MarkdownRendererTests
             ```
             """);
 
-        Assert.Contains("<h1 id=\"titel\">", html);
+        Assert.Contains("<h1 id=\"inhalt-titel\">", html);
         Assert.Contains("text-align: center", html);
         Assert.Contains("text-align: right", html);
         Assert.Contains("class=\"task-list-item\"", html);
@@ -135,5 +135,44 @@ public class MarkdownRendererTests
 
         Assert.Throws<MarkdownException>(() => MarkdownRenderer.ToHtml(markdown, maxHtmlLength: 10_000));
         Assert.Contains("footnote", MarkdownRenderer.ToHtml(markdown));
+    }
+
+    [Theory]
+    [InlineData("Text {#getElementById}")]
+    [InlineData("Text {id=cookie name=cookie}")]
+    [InlineData("![a](/a.png){#forms name=forms}")]
+    [InlineData("# getElementById")]
+    public void ToHtml_KeepsBrowserNamesFromBeingOverridden(string markdown)
+    {
+        var html = MarkdownRenderer.ToHtml(markdown);
+
+        Assert.DoesNotContain("name=", html);
+        Assert.DoesNotContain("id=\"getElementById\"", html, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("id=\"cookie\"", html);
+        Assert.DoesNotContain("id=\"forms\"", html);
+        Assert.Contains("id=\"inhalt-", html);
+    }
+
+    [Fact]
+    public void ToHtml_KeepsJumpsWithinThePageWorking()
+    {
+        var html = MarkdownRenderer.ToHtml("""
+            # Erster Teil
+
+            Siehe [unten](#zweiter-teil) und die Fußnote[^1], nicht aber [fremd](/doc#zweiter-teil) oder [leer](#).
+
+            ## Zweiter Teil
+
+            [^1]: Anmerkung
+            """);
+
+        Assert.Contains("<h2 id=\"inhalt-zweiter-teil\">", html);
+        Assert.Contains("href=\"#inhalt-zweiter-teil\"", html);
+        Assert.Contains("href=\"/doc#zweiter-teil\"", html);
+        Assert.Contains("href=\"#\"", html);
+        // Jedes Sprungziel innerhalb der Seite hat ein Element mit genau dieser id.
+        var ziele = System.Text.RegularExpressions.Regex.Matches(html, "href=\"#([^\"]+)\"").Select(m => m.Groups[1].Value).ToList();
+        Assert.True(ziele.Count >= 3);
+        Assert.All(ziele, ziel => Assert.Contains($"id=\"{ziel}\"", html));
     }
 }

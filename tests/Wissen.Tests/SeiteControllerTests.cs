@@ -82,7 +82,7 @@ public class SeiteControllerTests
         });
 
         var inhalt = (await db.Seiten.SingleAsync()).Inhalt;
-        Assert.Contains("<h1 id=\"titel\">Titel</h1>", inhalt);
+        Assert.Contains("<h1 id=\"inhalt-titel\">Titel</h1>", inhalt);
         Assert.Contains("href=\"https://example.org\"", inhalt);
         Assert.Contains("href=\"mailto:a@example.org\"", inhalt);
         Assert.Contains("<table>", inhalt);
