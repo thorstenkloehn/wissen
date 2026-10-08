@@ -32,6 +32,7 @@ try
     builder.Services.AddScoped<ICommandModule, RestoreModule>();
     builder.Services.AddScoped<ICommandModule, RestoreXmlModule>();
     builder.Services.AddScoped<ICommandModule, MigrateModule>();
+    builder.Services.AddScoped<ICommandModule, SeitenRendernModule>();
     builder.Services.AddScoped<ICommandModule, KontoAnlegenModule>();
     builder.Services.AddScoped<ICommandModule, KontoAdminModule>();
     builder.Services.AddScoped<ICommandModule, KontoPasswortModule>();

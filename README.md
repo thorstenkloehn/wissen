@@ -211,6 +211,7 @@ Was der Befehl in welchem Fall meldet:
 | `dotnet run --project src/Wissen.Cli -- help` | Befehle der Konsolenanwendung anzeigen |
 | `dotnet ef migrations add <Name> --project src/Wissen.Infrastructure --startup-project src/Wissen.Web` | neue Migration erzeugen |
 | `dotnet run --project src/Wissen.Cli -- migrate` | Migrationen auf PostgreSQL anwenden |
+| `dotnet run --project src/Wissen.Cli -- seiten-rendern [--pruefen]` | HTML aller Seiten und Versionen neu aus dem Markdown erzeugen (nach einem Update ausführen) |
 | `dotnet run --project src/Wissen.Cli -- konto-anlegen <E-Mail> [--admin]` | Konto anlegen, das sich sofort anmelden kann |
 | `dotnet run --project src/Wissen.Cli -- konto-admin <E-Mail> [--entziehen]` | Rolle Administrator (darf Seiten löschen) geben oder wegnehmen |
 | `dotnet run --project src/Wissen.Cli -- konto-passwort <E-Mail>` | neues Passwort für ein Konto setzen |
