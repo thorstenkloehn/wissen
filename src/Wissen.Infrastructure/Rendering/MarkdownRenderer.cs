@@ -4,6 +4,9 @@ using Markdig;
 
 namespace Wissen.Infrastructure.Rendering;
 
+// Das Markdown lässt sich nicht in HTML umsetzen; die Meldung ist für den Benutzer bestimmt.
+public class MarkdownException(string message, Exception? innerException = null) : Exception(message, innerException);
+
 // Erzeugt aus dem Markdown einer Seite das HTML für Seite.Inhalt.
 public static class MarkdownRenderer
 {
@@ -98,6 +101,25 @@ public static class MarkdownRenderer
 
     // Seite.Inhalt wird roh ausgegeben. DisableHtml allein genügt dafür nicht: Markdown erlaubt
     // weiterhin javascript:-Links und Attribute wie {onclick=...}; die entfernt erst der Sanitizer.
-    public static string ToHtml(string markdown) =>
-        Sanitizer.Sanitize(Markdown.ToHtml(markdown, Pipeline));
+    // Mit maxHtmlLength bricht die Umsetzung ab, bevor der Sanitizer ein übergroßes HTML bearbeitet:
+    // Seine Laufzeit wächst mit der Größe stark an (2,5 Millionen Zeichen brauchten über 20 Sekunden).
+    public static string ToHtml(string markdown, int maxHtmlLength = int.MaxValue)
+    {
+        string html;
+        try
+        {
+            html = Markdown.ToHtml(markdown, Pipeline);
+        }
+        // Markdig bricht bei zu tiefer Verschachtelung und bei übergroßen Tabellen mit diesen Ausnahmen ab.
+        catch (Exception e) when (e is ArgumentException or OverflowException)
+        {
+            throw new MarkdownException("Der Inhalt ist zu tief verschachtelt oder enthält eine zu große Tabelle.", e);
+        }
+
+        if (html.Length > maxHtmlLength)
+        {
+            throw new MarkdownException($"Aus dem Inhalt entsteht eine zu große Seite ({html.Length:N0} Zeichen HTML, erlaubt sind {maxHtmlLength:N0}). Bitte teilen Sie den Inhalt auf mehrere Seiten auf.");
+        }
+        return Sanitizer.Sanitize(html);
+    }
 }

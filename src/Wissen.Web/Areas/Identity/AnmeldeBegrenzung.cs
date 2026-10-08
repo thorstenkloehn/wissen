@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.RateLimiting;
-using Microsoft.AspNetCore.RateLimiting;
 
 namespace Wissen.Web.Areas.Identity;
 
@@ -15,9 +14,10 @@ public static class AnmeldeBegrenzung
 
     public static readonly TimeSpan Zeitraum = TimeSpan.FromMinutes(5);
 
-    public static void Configure(RateLimiterOptions options)
-    {
-        options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+    public const string Meldung = "Zu viele Anmeldeversuche. Bitte versuchen Sie es in einigen Minuten erneut.";
+
+    public static PartitionedRateLimiter<HttpContext> CreateLimiter() =>
+        PartitionedRateLimiter.Create<HttpContext, string>(context =>
             Partition(context) is { } partition
                 ? RateLimitPartition.GetFixedWindowLimiter(partition, _ => new FixedWindowRateLimiterOptions
                 {
@@ -25,15 +25,6 @@ public static class AnmeldeBegrenzung
                     Window = Zeitraum,
                 })
                 : RateLimitPartition.GetNoLimiter(""));
-        options.OnRejected = async (context, cancellationToken) =>
-        {
-            var response = context.HttpContext.Response;
-            response.StatusCode = StatusCodes.Status429TooManyRequests;
-            response.Headers.RetryAfter = ((int)Zeitraum.TotalSeconds).ToString();
-            response.ContentType = "text/plain; charset=utf-8";
-            await response.WriteAsync("Zu viele Anmeldeversuche. Bitte versuchen Sie es in einigen Minuten erneut.", cancellationToken);
-        };
-    }
 
     // Schlüssel, unter dem die Versuche gezählt werden, oder null, wenn die Anfrage keine Anmeldung ist.
     // Gezählt werden Login, LoginWith2fa und LoginWithRecoveryCode.

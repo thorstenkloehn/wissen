@@ -1,4 +1,6 @@
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Identity;
+using Wissen.Web;
 using Wissen.Web.Areas.Identity;
 using Wissen.Infrastructure;
 using Wissen.Infrastructure.Data;
@@ -22,7 +24,20 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddErrorDescriber<GermanIdentityErrorDescriber>();
 builder.Services.AddControllersWithViews();
-builder.Services.AddRateLimiter(AnmeldeBegrenzung.Configure);
+builder.Services.AddRateLimiter(options =>
+{
+    options.GlobalLimiter = PartitionedRateLimiter.CreateChained(
+        [AnmeldeBegrenzung.CreateLimiter(), .. SpeicherBegrenzung.CreateLimiters()]);
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        var speichern = SpeicherBegrenzung.Partition(context.HttpContext) is not null;
+        var response = context.HttpContext.Response;
+        response.StatusCode = StatusCodes.Status429TooManyRequests;
+        response.Headers.RetryAfter = ((int)(speichern ? SpeicherBegrenzung.Zeitraum : AnmeldeBegrenzung.Zeitraum).TotalSeconds).ToString();
+        response.ContentType = "text/plain; charset=utf-8";
+        await response.WriteAsync(speichern ? SpeicherBegrenzung.Meldung : AnmeldeBegrenzung.Meldung, cancellationToken);
+    };
+});
 
 // Ohne "RegistrierungErlaubt": true kann sich niemand selbst ein Konto anlegen.
 if (!builder.Configuration.GetValue<bool>("RegistrierungErlaubt"))
@@ -77,6 +92,8 @@ else
 app.UseHttpsRedirection();
 app.UseRouting();
 
+// Vor UseRateLimiter: SpeicherBegrenzung zählt je Konto und braucht dafür den angemeldeten Benutzer.
+app.UseAuthentication();
 app.UseRateLimiter();
 
 app.UseAuthorization();

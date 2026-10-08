@@ -118,4 +118,22 @@ public class MarkdownRendererTests
         Assert.DoesNotContain("onclick", html);
         Assert.DoesNotContain("<script", html);
     }
+
+    [Theory]
+    [InlineData('>')]
+    [InlineData('[')]
+    public void ToHtml_RejectsDeeplyNestedMarkdown(char zeichen)
+    {
+        Assert.Throws<MarkdownException>(() => MarkdownRenderer.ToHtml(new string(zeichen, 200_000)));
+    }
+
+    [Fact]
+    public void ToHtml_RejectsHtmlAboveTheLimit()
+    {
+        // Jeder Verweis auf die Fußnote wird im HTML um ein Vielfaches länger.
+        var markdown = string.Concat(Enumerable.Repeat("[^1]", 1_000)) + "\n\n[^1]: x";
+
+        Assert.Throws<MarkdownException>(() => MarkdownRenderer.ToHtml(markdown, maxHtmlLength: 10_000));
+        Assert.Contains("footnote", MarkdownRenderer.ToHtml(markdown));
+    }
 }

@@ -255,6 +255,55 @@ public class SeiteControllerTests
                 },
             },
         };
+
+    // 200 000 Zeichen, aus denen über 3 Millionen Zeichen HTML würden.
+    private static readonly string ZuGrossesMarkdown = string.Concat(Enumerable.Repeat("[^1]", 49_990)) + "\n\n[^1]: x";
+
+    [Fact]
+    public async Task Neu_RejectsMarkdownThatCannotBeRendered()
+    {
+        using var db = CreateContext();
+        var controller = new SeiteController(db);
+
+        var result = await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = new string('>', 10_000) });
+
+        Assert.IsType<ViewResult>(result);
+        Assert.True(controller.ModelState.ContainsKey(nameof(SeiteNeuViewModel.MarkdownInhalt)));
+        Assert.Equal(0, await db.Seiten.CountAsync());
+    }
+
+    [Fact]
+    public async Task Neu_RejectsMarkdownWithTooMuchHtml()
+    {
+        using var db = CreateContext();
+        var controller = new SeiteController(db);
+
+        var result = await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = ZuGrossesMarkdown });
+
+        Assert.IsType<ViewResult>(result);
+        Assert.True(controller.ModelState.ContainsKey(nameof(SeiteNeuViewModel.MarkdownInhalt)));
+        Assert.Equal(0, await db.Seiten.CountAsync());
+    }
+
+    [Fact]
+    public async Task Bearbeiten_LeavesPageUntouchedWhenMarkdownCannotBeRendered()
+    {
+        using var db = CreateContext();
+        var controller = new SeiteController(db);
+        await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "alt" });
+        var id = (await db.Seiten.SingleAsync()).Id;
+
+        var result = await controller.Bearbeiten(id, new SeiteBearbeitenViewModel { Kategorie = "Technik", MarkdownInhalt = ZuGrossesMarkdown });
+
+        var model = Assert.IsType<SeiteBearbeitenViewModel>(Assert.IsType<ViewResult>(result).Model);
+        Assert.Equal("doc/x", model.Path);
+        Assert.True(controller.ModelState.ContainsKey(nameof(SeiteBearbeitenViewModel.MarkdownInhalt)));
+        db.ChangeTracker.Clear();
+        var seite = await db.Seiten.Include(s => s.Versionen).SingleAsync();
+        Assert.Equal("Allgemein", seite.Kategorie);
+        Assert.Equal("alt", seite.MarkdownInhalt);
+        Assert.Single(seite.Versionen);
+    }
 }
 
 public class SeiteNeuViewModelTests

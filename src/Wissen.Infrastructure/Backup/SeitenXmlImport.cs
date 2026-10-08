@@ -44,7 +44,7 @@ public partial class SeitenXmlImport(ApplicationDbContext db)
                 Path = path,
                 Kategorie = Kategorie(element, $"der Seite »{path}«"),
                 MarkdownInhalt = markdown,
-                Inhalt = MarkdownRenderer.ToHtml(markdown),
+                Inhalt = ToHtml(markdown, $"der Seite »{path}«"),
             };
 
             foreach (var versionElement in element.Element("versionsgeschichte")?.Elements("version") ?? [])
@@ -75,7 +75,7 @@ public partial class SeitenXmlImport(ApplicationDbContext db)
                     Nummer = nummer,
                     Kategorie = Kategorie(versionElement, ort),
                     MarkdownInhalt = versionMarkdown,
-                    Inhalt = MarkdownRenderer.ToHtml(versionMarkdown),
+                    Inhalt = ToHtml(versionMarkdown, $"der Version {nummer} der Seite »{path}«"),
                     ErstelltAm = erstelltAm,
                 });
             }
@@ -129,6 +129,18 @@ public partial class SeitenXmlImport(ApplicationDbContext db)
 
         await db.SaveChangesAsync(cancellationToken);
         return new SeitenXmlImportResult(seiten.Count - vorhanden.Count, vorhanden.Count);
+    }
+
+    private static string ToHtml(string markdown, string ort)
+    {
+        try
+        {
+            return MarkdownRenderer.ToHtml(markdown);
+        }
+        catch (MarkdownException e)
+        {
+            throw new FormatException($"Das Markdown {ort} lässt sich nicht umsetzen: {e.Message}");
+        }
     }
 
     private static string Required(XElement element, string name, string ort) =>

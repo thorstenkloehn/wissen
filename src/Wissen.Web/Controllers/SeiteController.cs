@@ -42,7 +42,16 @@ public class SeiteController(ApplicationDbContext db) : Controller
         }
 
         var kategorie = model.Kategorie!.Trim();
-        var inhalt = MarkdownRenderer.ToHtml(model.MarkdownInhalt!);
+        string inhalt;
+        try
+        {
+            inhalt = MarkdownRenderer.ToHtml(model.MarkdownInhalt!, Seite.MaxHtmlLength);
+        }
+        catch (MarkdownException e)
+        {
+            ModelState.AddModelError(nameof(model.MarkdownInhalt), e.Message);
+            return View(model);
+        }
 
         var seite = new Seite
         {
@@ -98,7 +107,16 @@ public class SeiteController(ApplicationDbContext db) : Controller
             return View(model);
         }
 
-        await AendereSeite(seite, model.Kategorie!.Trim(), model.MarkdownInhalt!);
+        try
+        {
+            await AendereSeite(seite, model.Kategorie!.Trim(), model.MarkdownInhalt!);
+        }
+        catch (MarkdownException e)
+        {
+            ModelState.AddModelError(nameof(model.MarkdownInhalt), e.Message);
+            model.Path = seite.Path;
+            return View(model);
+        }
 
         return RedirectToSeite(seite.Path);
     }
@@ -166,7 +184,15 @@ public class SeiteController(ApplicationDbContext db) : Controller
             return NotFound();
         }
 
-        await AendereSeite(seite, version.Kategorie, version.MarkdownInhalt);
+        try
+        {
+            await AendereSeite(seite, version.Kategorie, version.MarkdownInhalt);
+        }
+        // Nur bei Versionen möglich, die nicht über das Formular entstanden sind (restore-xml).
+        catch (MarkdownException e)
+        {
+            return UnprocessableEntity($"Die Seite lässt sich nicht auf diese Version zurücksetzen: {e.Message}");
+        }
 
         return RedirectToSeite(seite.Path);
     }
@@ -180,13 +206,16 @@ public class SeiteController(ApplicationDbContext db) : Controller
             return;
         }
 
+        // Vor jeder Änderung an der Seite: Lässt sich das Markdown nicht umsetzen, bleibt sie unberührt.
+        var inhalt = MarkdownRenderer.ToHtml(markdownInhalt, Seite.MaxHtmlLength);
+
         var letzteNummer = await db.SeitenVersionen
             .Where(v => v.SeiteId == seite.Id)
             .MaxAsync(v => (int?)v.Nummer) ?? 0;
 
         seite.Kategorie = kategorie;
         seite.MarkdownInhalt = markdownInhalt;
-        seite.Inhalt = MarkdownRenderer.ToHtml(markdownInhalt);
+        seite.Inhalt = inhalt;
         db.SeitenVersionen.Add(new SeitenVersion
         {
             SeiteId = seite.Id,

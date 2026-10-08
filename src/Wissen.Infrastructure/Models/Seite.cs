@@ -10,6 +10,10 @@ public class Seite
     // als neue Version; ohne Grenze ließe sich die Datenbank mit wenigen Anfragen füllen.
     public const int MaxMarkdownLength = 200_000;
 
+    // Obergrenze für das daraus erzeugte HTML in Zeichen. Gewöhnlicher Text wird etwa doppelt so lang;
+    // Fußnoten und Abkürzungen können ihn vervielfachen (200 000 Zeichen ergaben über 3 Millionen).
+    public const int MaxHtmlLength = 3 * MaxMarkdownLength;
+
     public int Id { get; set; }
 
     // Adresse der Seite ohne führenden Schrägstrich, z. B. "doc/einleitung"; eindeutig.
