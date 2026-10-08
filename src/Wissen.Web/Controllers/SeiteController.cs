@@ -15,6 +15,12 @@ public class SeiteController(ApplicationDbContext db) : Controller
     [HttpGet("neu")]
     public IActionResult Neu(string? path)
     {
+        // Das Formular zeigt den Pfad nur an; ohne Pfad gibt es nichts anzulegen.
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return LocalRedirect("/");
+        }
+
         return View(new SeiteNeuViewModel { Path = path });
     }
 

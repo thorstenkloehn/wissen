@@ -1,18 +1,20 @@
 ﻿@model SeiteNeuViewModel
 @{
-    ViewData["Title"] = "Seite anlegen";
+    // Der Pfad kommt aus der Adresse der fehlenden Seite und wird hier nur angezeigt.
+    var pfad = Model.Path?.Trim().Trim('/');
+    ViewData["Title"] = $"Erstellen von „{pfad}“";
+    // Abschnittsweise kodiert, damit ein Pfad wie "\\fremd.example" nicht als fremde Adresse gilt.
+    var zurueck = "/" + string.Join('/', (pfad ?? "").Split('/').Select(Uri.EscapeDataString));
 }
 
 <h1>@ViewData["Title"]</h1>
+<p>Sie sind einem Link zu einer Seite gefolgt, die nicht vorhanden ist. Um diese Seite anzulegen, tragen Sie Ihren Text in das untenstehende Bearbeitungsfeld ein.</p>
 <div class="row">
     <div class="col-md-8">
         <form asp-action="Neu" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
-            <div class="mb-3">
-                <label asp-for="Path" class="form-label"></label>
-                <input asp-for="Path" class="form-control" placeholder="doc/einleitung" aria-required="true" />
-                <span asp-validation-for="Path" class="text-danger"></span>
-            </div>
+            <input asp-for="Path" type="hidden" />
+            <div><span asp-validation-for="Path" class="text-danger"></span></div>
             <div class="mb-3">
                 <label asp-for="Kategorie" class="form-label"></label>
                 <input asp-for="Kategorie" class="form-control" aria-required="true" />
@@ -24,6 +26,7 @@
                 <span asp-validation-for="MarkdownInhalt" class="text-danger"></span>
             </div>
             <button type="submit" class="btn btn-primary">Seite anlegen</button>
+            <a class="btn btn-link" href="@zurueck">Abbrechen</a>
         </form>
     </div>
 </div>
