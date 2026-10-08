@@ -1,0 +1,30 @@
+﻿@model SeiteBearbeitenViewModel
+@{
+    ViewData["Title"] = "Seite bearbeiten";
+}
+
+<h1>@ViewData["Title"]</h1>
+<p>Pfad: @Model.Path</p>
+<div class="row">
+    <div class="col-md-8">
+        <form asp-action="Bearbeiten" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+            <div class="mb-3">
+                <label asp-for="Kategorie" class="form-label"></label>
+                <input asp-for="Kategorie" class="form-control" aria-required="true" />
+                <span asp-validation-for="Kategorie" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="MarkdownInhalt" class="form-label"></label>
+                <textarea asp-for="MarkdownInhalt" class="form-control font-monospace" rows="16" aria-required="true"></textarea>
+                <span asp-validation-for="MarkdownInhalt" class="text-danger"></span>
+            </div>
+            <button type="submit" class="btn btn-primary">Speichern</button>
+            <a class="btn btn-link" href="/@Model.Path">Abbrechen</a>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

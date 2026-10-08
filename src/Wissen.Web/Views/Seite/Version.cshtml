@@ -1,0 +1,12 @@
+﻿@model Wissen.Infrastructure.Models.SeitenVersion
+@{
+    ViewData["Title"] = $"Version {Model.Nummer}";
+}
+
+<h1>@ViewData["Title"]</h1>
+<p>
+    Früherer Stand der Seite <a href="/@Model.Seite.Path">@Model.Seite.Path</a>
+    vom @Model.ErstelltAm.ToLocalTime().ToString("dd.MM.yyyy HH:mm"), Kategorie: @Model.Kategorie
+</p>
+<hr />
+@Html.Raw(Model.Inhalt)
