@@ -8,6 +8,7 @@ ASP.NET-Core-MVC-Anwendung (.NET 10) mit Benutzerkonten über ASP.NET Core Ident
 - PostgreSQL mit einer Rolle und einer Datenbank für die Anwendung, dazu die Client-Programme `pg_dump` und `pg_restore` für die Sicherung
 - `dotnet-ef` für die Migrationen: `dotnet tool install --global dotnet-ef`
 - optional [mdBook](https://rust-lang.github.io/mdBook/) für den Arbeitsbericht
+- optional [docfx](https://dotnet.github.io/docfx/) für die Dokumentation des Quelltextes: `dotnet tool restore` (die Version steht in `dotnet-tools.json`)
 
 ## Einrichten
 
@@ -217,6 +218,7 @@ Was der Befehl in welchem Fall meldet:
 | `dotnet run --project src/Wissen.Cli -- konto-passwort <E-Mail>` | neues Passwort für ein Konto setzen |
 | `dotnet run --project src/Wissen.Cli -- konto-sperren <E-Mail> [--aufheben]` | Konto sperren oder Sperre aufheben |
 | `mdbook serve Dokument --open` | Arbeitsbericht unter <http://localhost:3000> ansehen |
+| `dotnet docfx docs/docfx.json --serve` | Dokumentation des Quelltextes erzeugen und unter <http://localhost:8080> ansehen |
 
 ## Aufbau
 
@@ -228,6 +230,7 @@ Was der Befehl in welchem Fall meldet:
 | `src/Wissen.Cli/` | Konsolenanwendung; jeder Befehl ist ein Modul in `Modules/` |
 | `tests/Wissen.Tests/` | xUnit-Tests |
 | `deploy/` | Vorlagen für den Server: systemd-Dienst, Umgebungsdatei, Caddyfile, tägliche Sicherung |
+| `docs/` | docfx-Konfiguration für die Dokumentation des Quelltextes; `api/` und `_site/` werden erzeugt und nicht versioniert |
 | `Dokument/` | Arbeitsbericht als mdBook, siehe [Dokument/README.md](Dokument/README.md) |
 
 ## Lizenz

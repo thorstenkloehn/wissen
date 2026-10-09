@@ -11,6 +11,7 @@ Die Solution `wissen.slnx` fasst vier Projekte zusammen (.NET 10):
 - `src/Wissen.Cli` ist die Konsolenanwendung mit den Befehlen `backup`, `backup-xml`, `restore`, `restore-xml`, `migrate`, `seiten-rendern`, `konto-anlegen`, `konto-admin`, `konto-passwort` und `konto-sperren`.
 - `tests/Wissen.Tests` enthält die xUnit-Tests.
 - `./Dokument` ist ein mdBook-Arbeitsbericht. **Der Inhalt stammt vom Nutzer:** Er schreibt Rohtexte in `Dokument/RAW`, Claude macht daraus fertige Artikel und korrigiert dabei nur Rechtschreibung und Grammatik, ohne etwas hinzuzudichten. Der genaue Ablauf steht in `Dokument/CLAUDE.md`; vor jeder Arbeit in `Dokument` dort nachlesen.
+- `docs/` enthält die Konfiguration für docfx (`docfx.json`, `index.md`, `toc.yml`, `filterConfig.yml`). docfx ist ein lokales Werkzeug (`dotnet-tools.json`, nach einem frischen Klon `dotnet tool restore`) und erzeugt aus den XML-Kommentaren (`///`) der drei Projekte unter `src` die Dokumentation des Quelltextes: `docs/api/` (Zwischenstand) und `docs/_site/` (fertige Seiten) stehen in `.gitignore`. Die Migrationen sind über `filterConfig.yml` ausgenommen. Nicht mit `Dokument` verwechseln.
 
 Abhängigkeiten zeigen nur in eine Richtung: `Wissen.Web` und `Wissen.Cli` verweisen auf `Wissen.Infrastructure`, nie umgekehrt. Im Wurzelordner darf kein Projekt liegen, weil es sonst die Dateien aller Unterordner (auch `Dokument`) mitkompilieren würde.
 
@@ -33,6 +34,7 @@ dotnet run --project src/Wissen.Cli -- konto-sperren <E-Mail> [--aufheben] # Kon
 dotnet ef migrations add <Name> --project src/Wissen.Infrastructure --startup-project src/Wissen.Web   # neue Migration
 dotnet ef database update --project src/Wissen.Infrastructure --startup-project src/Wissen.Web         # Migrationen anwenden
 mdbook serve Dokument --open             # Arbeitsbericht unter http://localhost:3000
+dotnet docfx docs/docfx.json             # Dokumentation des Quelltextes nach docs/_site erzeugen (--serve: unter http://localhost:8080 ansehen)
 ```
 
 Es gibt keine Lint-Konfiguration.

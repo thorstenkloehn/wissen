@@ -53,6 +53,10 @@ npm-debug.log*
 # mdBook-Ausgabe des Arbeitsberichts
 Dokument/book/
 
+# docfx: erzeugte API-Beschreibung und Ausgabe
+docs/api/
+docs/_site/
+
 # Claude Code: lokale Einstellungen
 .claude/settings.local.json
 

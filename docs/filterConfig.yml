@@ -1,0 +1,4 @@
+apiRules:
+# Die EF-Core-Migrationen sind erzeugter Code und gehören nicht in die Dokumentation.
+- exclude:
+    uidRegex: ^Wissen\.Infrastructure\.Migrations
