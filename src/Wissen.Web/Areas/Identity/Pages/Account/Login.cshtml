@@ -50,36 +50,26 @@
             </form>
         </section>
     </div>
-    <div class="col-md-6 col-md-offset-2">
-        <section>
-            <h3>Mit einem anderen Dienst anmelden.</h3>
-            <hr />
-            @{
-                if ((Model.ExternalLogins?.Count ?? 0) == 0)
-                {
+    @* Nur wenn ein externer Anmeldedienst eingerichtet ist; sonst gibt es hier nichts anzubieten. *@
+    @if ((Model.ExternalLogins?.Count ?? 0) > 0)
+    {
+        <div class="col-md-6 col-md-offset-2">
+            <section>
+                <h3>Mit einem anderen Dienst anmelden.</h3>
+                <hr />
+                <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post" class="form-horizontal">
                     <div>
                         <p>
-                            Es sind keine externen Authentifizierungsdienste eingerichtet. Lesen Sie diesen <a href="https://go.microsoft.com/fwlink/?LinkID=532715">Artikel
-                            über das Einrichten dieser ASP.NET-Anwendung für die Anmeldung über externe Dienste</a>.
+                            @foreach (var provider in Model.ExternalLogins!)
+                            {
+                                <button type="submit" class="btn btn-primary" name="provider" value="@provider.Name" title="Mit Ihrem @provider.DisplayName-Konto anmelden">@provider.DisplayName</button>
+                            }
                         </p>
                     </div>
-                }
-                else
-                {
-                    <form id="external-account" asp-page="./ExternalLogin" asp-route-returnUrl="@Model.ReturnUrl" method="post" class="form-horizontal">
-                        <div>
-                            <p>
-                                @foreach (var provider in Model.ExternalLogins!)
-                                {
-                                    <button type="submit" class="btn btn-primary" name="provider" value="@provider.Name" title="Mit Ihrem @provider.DisplayName-Konto anmelden">@provider.DisplayName</button>
-                                }
-                            </p>
-                        </div>
-                    </form>
-                }
-            }
-        </section>
-    </div>
+                </form>
+            </section>
+        </div>
+    }
 </div>
 
 @section Scripts {
