@@ -42,18 +42,22 @@ builder.Services.AddRateLimiter(options =>
     };
 });
 
+// Seiten, die mit 404 antworten. „Passwort vergessen“ und „Bestätigungs-E-Mail erneut senden“ bewirken
+// ohne E-Mail-Versand nichts; ein neues Passwort setzt die Konsolenanwendung (konto-passwort).
+List<string> gesperrteSeiten = ["/Account/ForgotPassword", "/Account/ForgotPasswordConfirmation", "/Account/ResendEmailConfirmation"];
 // Ohne "RegistrierungErlaubt": true kann sich niemand selbst ein Konto anlegen.
 if (!builder.Configuration.GetValue<bool>("RegistrierungErlaubt"))
 {
-    builder.Services.AddRazorPages(options =>
-    {
-        foreach (var page in new[] { "/Account/Register", "/Account/RegisterConfirmation" })
-        {
-            options.Conventions.AddAreaPageApplicationModelConvention("Identity", page,
-                model => model.Filters.Add(new RegistrierungGesperrtFilter()));
-        }
-    });
+    gesperrteSeiten.AddRange(["/Account/Register", "/Account/RegisterConfirmation"]);
 }
+builder.Services.AddRazorPages(options =>
+{
+    foreach (var page in gesperrteSeiten)
+    {
+        options.Conventions.AddAreaPageApplicationModelConvention("Identity", page,
+            model => model.Filters.Add(new SeiteGesperrtFilter()));
+    }
+});
 
 var app = builder.Build();
 

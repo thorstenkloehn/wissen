@@ -3,8 +3,9 @@ using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace Wissen.Web.Areas.Identity;
 
-// Beantwortet die Registrierungsseiten mit 404, solange "RegistrierungErlaubt" nicht gesetzt ist.
-public class RegistrierungGesperrtFilter : IResourceFilter
+// Beantwortet eine Identity-Seite mit 404. Program.cs hängt ihn an die Seiten, die ohne E-Mail-Versand
+// nichts bewirken, und an die Registrierungsseiten, solange "RegistrierungErlaubt" nicht gesetzt ist.
+public class SeiteGesperrtFilter : IResourceFilter
 {
     public void OnResourceExecuting(ResourceExecutingContext context)
     {
