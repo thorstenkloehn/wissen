@@ -27,15 +27,18 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddRateLimiter(options =>
 {
     options.GlobalLimiter = PartitionedRateLimiter.CreateChained(
-        [AnmeldeBegrenzung.CreateLimiter(), .. SpeicherBegrenzung.CreateLimiters()]);
+        [AnmeldeBegrenzung.CreateLimiter(), PasswortBegrenzung.CreateLimiter(), .. SpeicherBegrenzung.CreateLimiters()]);
     options.OnRejected = async (context, cancellationToken) =>
     {
-        var speichern = SpeicherBegrenzung.Partition(context.HttpContext) is not null;
+        var (zeitraum, meldung) =
+            SpeicherBegrenzung.Partition(context.HttpContext) is not null ? (SpeicherBegrenzung.Zeitraum, SpeicherBegrenzung.Meldung)
+            : PasswortBegrenzung.Partition(context.HttpContext) is not null ? (PasswortBegrenzung.Zeitraum, PasswortBegrenzung.Meldung)
+            : (AnmeldeBegrenzung.Zeitraum, AnmeldeBegrenzung.Meldung);
         var response = context.HttpContext.Response;
         response.StatusCode = StatusCodes.Status429TooManyRequests;
-        response.Headers.RetryAfter = ((int)(speichern ? SpeicherBegrenzung.Zeitraum : AnmeldeBegrenzung.Zeitraum).TotalSeconds).ToString();
+        response.Headers.RetryAfter = ((int)zeitraum.TotalSeconds).ToString();
         response.ContentType = "text/plain; charset=utf-8";
-        await response.WriteAsync(speichern ? SpeicherBegrenzung.Meldung : AnmeldeBegrenzung.Meldung, cancellationToken);
+        await response.WriteAsync(meldung, cancellationToken);
     };
 });
 
@@ -92,7 +95,7 @@ else
 app.UseHttpsRedirection();
 app.UseRouting();
 
-// Vor UseRateLimiter: SpeicherBegrenzung zählt je Konto und braucht dafür den angemeldeten Benutzer.
+// Vor UseRateLimiter: SpeicherBegrenzung und PasswortBegrenzung zählen je Konto und brauchen dafür den angemeldeten Benutzer.
 app.UseAuthentication();
 app.UseRateLimiter();
 
