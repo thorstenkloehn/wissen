@@ -33,7 +33,7 @@ namespace Wissen.Web.Areas.Identity.Pages.Account
         {
             if (userId == null || code == null)
             {
-                return RedirectToPage("/Index");
+                return LocalRedirect("~/");
             }
 
             var user = await _userManager.FindByIdAsync(userId);

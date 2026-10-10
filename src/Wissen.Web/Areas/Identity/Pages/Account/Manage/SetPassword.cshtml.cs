@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Wissen.Infrastructure.Identity;
 
 namespace Wissen.Web.Areas.Identity.Pages.Account.Manage
 {
@@ -49,7 +50,7 @@ namespace Wissen.Web.Areas.Identity.Pages.Account.Manage
             ///     directly from your code. This API may change or be removed in future releases.
             /// </summary>
             [Required(ErrorMessage = "Das Feld „{0}“ ist erforderlich.")]
-            [StringLength(100, ErrorMessage = "„{0}“ muss zwischen {2} und {1} Zeichen lang sein.", MinimumLength = 6)]
+            [StringLength(100, ErrorMessage = "„{0}“ muss zwischen {2} und {1} Zeichen lang sein.", MinimumLength = Passwortregeln.Mindestlaenge)]
             [DataType(DataType.Password)]
             [Display(Name = "Neues Passwort")]
             public string NewPassword { get; set; }

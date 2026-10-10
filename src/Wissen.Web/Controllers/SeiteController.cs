@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Wissen.Infrastructure.Data;
 using Wissen.Infrastructure.Identity;
 using Wissen.Infrastructure.Models;
@@ -70,7 +71,16 @@ public class SeiteController(ApplicationDbContext db) : Controller
         });
 
         db.Seiten.Add(seite);
-        await db.SaveChangesAsync();
+        try
+        {
+            await db.SaveChangesAsync();
+        }
+        // Ein anderes Konto hat die Seite zwischen der Prüfung oben und dem Speichern angelegt.
+        catch (DbUpdateException e) when (IstSchonVergeben(e))
+        {
+            ModelState.AddModelError(nameof(model.Path), "Unter diesem Pfad gibt es bereits eine Seite.");
+            return View(model);
+        }
 
         return RedirectToSeite(path);
     }
@@ -115,6 +125,12 @@ public class SeiteController(ApplicationDbContext db) : Controller
         catch (MarkdownException e)
         {
             ModelState.AddModelError(nameof(model.MarkdownInhalt), e.Message);
+            model.Path = seite.Path;
+            return View(model);
+        }
+        catch (DbUpdateException e) when (IstSchonVergeben(e))
+        {
+            ModelState.AddModelError(string.Empty, GleichzeitigGeaendert);
             model.Path = seite.Path;
             return View(model);
         }
@@ -194,6 +210,10 @@ public class SeiteController(ApplicationDbContext db) : Controller
         {
             return UnprocessableEntity($"Die Seite lässt sich nicht auf diese Version zurücksetzen: {e.Message}");
         }
+        catch (DbUpdateException e) when (IstSchonVergeben(e))
+        {
+            return Conflict(GleichzeitigGeaendert);
+        }
 
         return RedirectToSeite(seite.Path);
     }
@@ -229,6 +249,13 @@ public class SeiteController(ApplicationDbContext db) : Controller
         });
         await db.SaveChangesAsync();
     }
+
+    private const string GleichzeitigGeaendert = "Die Seite wurde gerade von einem anderen Konto geändert. Ihre Änderung wurde nicht gespeichert; bitte versuchen Sie es erneut.";
+
+    // Zwei Anfragen zur selben Zeit lesen dieselbe letzte Versionsnummer (oder denselben freien Pfad).
+    // Die eindeutigen Indizes lassen nur eine davon speichern; die andere bekommt eine Meldung statt Fehler 500.
+    private static bool IstSchonVergeben(DbUpdateException e) =>
+        e.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation };
 
     private LocalRedirectResult RedirectToSeite(string path) =>
         LocalRedirect("/" + string.Join('/', path.Split('/').Select(Uri.EscapeDataString)));

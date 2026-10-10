@@ -2,6 +2,8 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Npgsql;
 using Wissen.Infrastructure.Data;
 using Wissen.Infrastructure.Models;
 using Wissen.Web.Controllers;
@@ -370,6 +372,69 @@ public class SeiteControllerTests
 
         var autoren = await db.SeitenVersionen.OrderBy(v => v.Nummer).Select(v => v.Autor).ToListAsync();
         Assert.Equal(["anna@example.org", "bert@example.org", "carla@example.org"], autoren);
+    }
+
+    // Lässt das nächste Speichern so scheitern wie PostgreSQL bei einem doppelten Wert in einem
+    // eindeutigen Index; die Datenbank im Arbeitsspeicher prüft solche Indizes nicht.
+    private sealed class DoppelterWert : SaveChangesInterceptor
+    {
+        public bool Aktiv { get; set; }
+
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default) =>
+            Aktiv
+                ? throw new DbUpdateException("doppelt", new PostgresException("doppelt", "ERROR", "ERROR", PostgresErrorCodes.UniqueViolation))
+                : base.SavingChangesAsync(eventData, result, cancellationToken);
+    }
+
+    private static ApplicationDbContext CreateContext(DoppelterWert doppelt) =>
+        new(new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .AddInterceptors(doppelt)
+            .Options);
+
+    [Fact]
+    public async Task Neu_ShowsMessageWhenAnotherAccountCreatesThePathAtTheSameTime()
+    {
+        var doppelt = new DoppelterWert { Aktiv = true };
+        using var db = CreateContext(doppelt);
+        var controller = new SeiteController(db);
+
+        var result = await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "eins" });
+
+        Assert.IsType<ViewResult>(result);
+        Assert.True(controller.ModelState.ContainsKey(nameof(SeiteNeuViewModel.Path)));
+    }
+
+    [Fact]
+    public async Task Bearbeiten_ShowsMessageWhenAnotherAccountSavesAtTheSameTime()
+    {
+        var doppelt = new DoppelterWert();
+        using var db = CreateContext(doppelt);
+        await new SeiteController(db).Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "eins" });
+        var id = (await db.Seiten.SingleAsync()).Id;
+        doppelt.Aktiv = true;
+        var controller = new SeiteController(db);
+
+        var result = await controller.Bearbeiten(id, new SeiteBearbeitenViewModel { Kategorie = "Allgemein", MarkdownInhalt = "zwei" });
+
+        var model = Assert.IsType<SeiteBearbeitenViewModel>(Assert.IsType<ViewResult>(result).Model);
+        Assert.Equal("doc/x", model.Path);
+        Assert.False(controller.ModelState.IsValid);
+    }
+
+    [Fact]
+    public async Task Zuruecksetzen_AnswersConflictWhenAnotherAccountSavesAtTheSameTime()
+    {
+        var doppelt = new DoppelterWert();
+        using var db = CreateContext(doppelt);
+        await new SeiteController(db).Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "eins" });
+        var id = (await db.Seiten.SingleAsync()).Id;
+        await new SeiteController(db).Bearbeiten(id, new SeiteBearbeitenViewModel { Kategorie = "Allgemein", MarkdownInhalt = "zwei" });
+        doppelt.Aktiv = true;
+
+        var result = await new SeiteController(db).Zuruecksetzen(id, 1);
+
+        Assert.IsType<ConflictObjectResult>(result);
     }
 }
 
