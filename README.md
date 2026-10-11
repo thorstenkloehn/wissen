@@ -52,6 +52,8 @@ Je IP-Adresse sind 5 Anmeldeversuche in 5 Minuten möglich. Ein Konto wird nach 
 
 Die Vorlagen in `deploy/` gehen von einem eigenen Linux-Server mit systemd aus: Die App läuft als Dienst und lauscht nur lokal, davor steht [Caddy](https://caddyserver.com/) als Reverse-Proxy und besorgt das HTTPS-Zertifikat. Auf dem Server werden die [ASP.NET Core Runtime 10](https://dotnet.microsoft.com/download/dotnet/10.0), PostgreSQL und Caddy gebraucht.
 
+Mit nginx statt Caddy: Die ausführliche Anleitung für Ubuntu Server 24.04 samt Vorbereitung steht in [anleitung.md](anleitung.md).
+
 `appsettings.json` wird nicht mit veröffentlicht, weil sie das Passwort der lokalen Datenbank enthält. Auf dem Server kommen alle Einstellungen aus `/etc/wissen/wissen.env`.
 
 1. Lokal veröffentlichen und die beiden Ordner nach `/opt/wissen/web` und `/opt/wissen/cli` auf den Server kopieren:
