@@ -2,7 +2,7 @@
 
 Diese Anleitung beschreibt, wie die Anwendung auf einem eigenen Server mit Ubuntu Server 24.04 LTS läuft. Die App läuft als systemd-Dienst und lauscht nur lokal auf `127.0.0.1:5000`; davor steht nginx als Reverse-Proxy und liefert die Seite per HTTPS aus. Das Zertifikat kommt von Let's Encrypt (certbot).
 
-Die Anleitung ersetzt den Abschnitt mit Caddy in `README.md`: Statt `deploy/Caddyfile` wird die nginx-Konfiguration aus Schritt 8 benutzt. Alle anderen Vorlagen in `deploy/` gelten unverändert.
+`README.md` nennt dieselben Schritte in Kurzform. Die Vorlagen für Dienst, Umgebungsdatei und Sicherung liegen in `deploy/`; die nginx-Konfiguration steht in Schritt 8.
 
 In den Befehlen sind zu ersetzen:
 

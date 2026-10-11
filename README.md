@@ -50,9 +50,9 @@ Je IP-Adresse sind 5 Anmeldeversuche in 5 Minuten möglich. Ein Konto wird nach 
 
 ## Veröffentlichen auf einem Server
 
-Die Vorlagen in `deploy/` gehen von einem eigenen Linux-Server mit systemd aus: Die App läuft als Dienst und lauscht nur lokal, davor steht [Caddy](https://caddyserver.com/) als Reverse-Proxy und besorgt das HTTPS-Zertifikat. Auf dem Server werden die [ASP.NET Core Runtime 10](https://dotnet.microsoft.com/download/dotnet/10.0), PostgreSQL und Caddy gebraucht.
+Die Vorlagen in `deploy/` gehen von einem eigenen Linux-Server mit systemd aus: Die App läuft als Dienst und lauscht nur lokal, davor steht [nginx](https://nginx.org/) als Reverse-Proxy, das HTTPS-Zertifikat besorgt certbot (Let's Encrypt). Auf dem Server werden die [ASP.NET Core Runtime 10](https://dotnet.microsoft.com/download/dotnet/10.0), PostgreSQL, nginx und certbot gebraucht.
 
-Mit nginx statt Caddy: Die ausführliche Anleitung für Ubuntu Server 24.04 samt Vorbereitung steht in [anleitung.md](anleitung.md).
+Hier stehen die Schritte in Kurzform. Die ausführliche Anleitung für Ubuntu Server 24.04 samt Vorbereitung, nginx-Konfiguration und Fehlersuche steht in [anleitung.md](anleitung.md).
 
 `appsettings.json` wird nicht mit veröffentlicht, weil sie das Passwort der lokalen Datenbank enthält. Auf dem Server kommen alle Einstellungen aus `/etc/wissen/wissen.env`.
 
@@ -86,7 +86,12 @@ Mit nginx statt Caddy: Die ausführliche Anleitung für Ubuntu Server 24.04 samt
    sudo systemctl enable --now wissen
    ```
 
-6. `deploy/Caddyfile` nach `/etc/caddy/Caddyfile` kopieren, die Domain eintragen und `sudo systemctl reload caddy` ausführen.
+6. nginx als Reverse-Proxy vor `127.0.0.1:5000` einrichten und das HTTPS-Zertifikat holen; die Konfiguration steht in [anleitung.md](anleitung.md), Schritte 8 und 9:
+
+   ```bash
+   sudo nginx -t && sudo systemctl reload nginx
+   sudo certbot --nginx -d IHRE-DOMAIN.de
+   ```
 
 7. Das erste Konto anlegen; das Passwort wird abgefragt:
 
@@ -231,7 +236,7 @@ Was der Befehl in welchem Fall meldet:
 | `src/Wissen.Infrastructure/` | Datenzugriff: `ApplicationDbContext`, EF-Core-Migrationen für PostgreSQL, Datenbanksicherung |
 | `src/Wissen.Cli/` | Konsolenanwendung; jeder Befehl ist ein Modul in `Modules/` |
 | `tests/Wissen.Tests/` | xUnit-Tests |
-| `deploy/` | Vorlagen für den Server: systemd-Dienst, Umgebungsdatei, Caddyfile, tägliche Sicherung |
+| `deploy/` | Vorlagen für den Server: systemd-Dienst, Umgebungsdatei, tägliche Sicherung |
 | `docs/` | docfx-Konfiguration für die Dokumentation des Quelltextes; `api/` und `_site/` werden erzeugt und nicht versioniert |
 | `Dokument/` | Arbeitsbericht als mdBook, siehe [Dokument/README.md](Dokument/README.md) |
 

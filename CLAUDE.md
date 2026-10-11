@@ -59,7 +59,7 @@ Die Konsolenanwendung liest dieselbe `appsettings.json` wie die Web-App: `Wissen
 
 ## Veröffentlichen
 
-`deploy/` enthält Vorlagen für einen Linux-Server (systemd-Dienst `wissen.service`, Umgebungsdatei `wissen.env.example`, `Caddyfile`, tägliche Sicherung über `wissen-backup.service` und `wissen-backup.timer`); die Schritte stehen in `README.md`. `appsettings.json` ist in beiden `.csproj` vom Veröffentlichen ausgenommen (`CopyToPublishDirectory="Never"`), weil sie das lokale Passwort enthält; auf dem Server kommen alle Einstellungen aus Umgebungsvariablen (`ConnectionStrings__DefaultConnection`, `AllowedHosts`, `RegistrierungErlaubt`).
+`deploy/` enthält Vorlagen für einen Linux-Server (systemd-Dienst `wissen.service`, Umgebungsdatei `wissen.env.example`, tägliche Sicherung über `wissen-backup.service` und `wissen-backup.timer`); die Schritte stehen in `README.md`, ausführlich für Ubuntu Server 24.04 in `anleitung.md`. Reverse-Proxy ist nginx mit certbot; die nginx-Konfiguration steht nur in `anleitung.md` (Schritt 8), nicht als Datei in `deploy/`. `appsettings.json` ist in beiden `.csproj` vom Veröffentlichen ausgenommen (`CopyToPublishDirectory="Never"`), weil sie das lokale Passwort enthält; auf dem Server kommen alle Einstellungen aus Umgebungsvariablen (`ConnectionStrings__DefaultConnection`, `AllowedHosts`, `RegistrierungErlaubt`).
 
 ## Datenbank
 
