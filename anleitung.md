@@ -2,7 +2,7 @@
 
 Diese Anleitung beschreibt, wie die Anwendung auf einem eigenen Server mit Ubuntu Server 24.04 LTS läuft. Die App läuft als systemd-Dienst und lauscht nur lokal auf `127.0.0.1:5000`; davor steht nginx als Reverse-Proxy und liefert die Seite per HTTPS aus. Das Zertifikat kommt von Let's Encrypt (certbot).
 
-`README.md` nennt dieselben Schritte in Kurzform. Die Vorlagen für Dienst, Umgebungsdatei und Sicherung liegen in `deploy/`; die nginx-Konfiguration steht in Schritt 8.
+`README.md` nennt dieselben Schritte in Kurzform. Die Vorlagen für Dienst, Umgebungsdatei, nginx und Sicherung liegen in `deploy/`.
 
 In den Befehlen sind zu ersetzen:
 
@@ -148,13 +148,14 @@ Erwartet wird `HTTP/1.1 200 OK` (oder `404`, solange die Seite `doc` noch nicht 
 
 ### 8. nginx einrichten
 
-Die Datei `/etc/nginx/sites-available/wissen` anlegen:
+Die Vorlage `deploy/nginx-wissen.conf` nach `/etc/nginx/sites-available/wissen` kopieren und bei `server_name` die Domain eintragen:
 
 ```bash
+sudo cp ~/wissen-upload/deploy/nginx-wissen.conf /etc/nginx/sites-available/wissen
 sudo nano /etc/nginx/sites-available/wissen
 ```
 
-Inhalt:
+Die Vorlage enthält:
 
 ```nginx
 server {

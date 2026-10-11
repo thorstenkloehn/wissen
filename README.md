@@ -86,9 +86,10 @@ Hier stehen die Schritte in Kurzform. Die ausführliche Anleitung für Ubuntu Se
    sudo systemctl enable --now wissen
    ```
 
-6. nginx als Reverse-Proxy vor `127.0.0.1:5000` einrichten und das HTTPS-Zertifikat holen; die Konfiguration steht in [anleitung.md](anleitung.md), Schritte 8 und 9:
+6. `deploy/nginx-wissen.conf` nach `/etc/nginx/sites-available/wissen` kopieren, die Domain eintragen, einschalten und das HTTPS-Zertifikat holen:
 
    ```bash
+   sudo ln -s /etc/nginx/sites-available/wissen /etc/nginx/sites-enabled/wissen
    sudo nginx -t && sudo systemctl reload nginx
    sudo certbot --nginx -d IHRE-DOMAIN.de
    ```
@@ -236,7 +237,7 @@ Was der Befehl in welchem Fall meldet:
 | `src/Wissen.Infrastructure/` | Datenzugriff: `ApplicationDbContext`, EF-Core-Migrationen für PostgreSQL, Datenbanksicherung |
 | `src/Wissen.Cli/` | Konsolenanwendung; jeder Befehl ist ein Modul in `Modules/` |
 | `tests/Wissen.Tests/` | xUnit-Tests |
-| `deploy/` | Vorlagen für den Server: systemd-Dienst, Umgebungsdatei, tägliche Sicherung |
+| `deploy/` | Vorlagen für den Server: systemd-Dienst, Umgebungsdatei, nginx-Konfiguration, tägliche Sicherung |
 | `docs/` | docfx-Konfiguration für die Dokumentation des Quelltextes; `api/` und `_site/` werden erzeugt und nicht versioniert |
 | `Dokument/` | Arbeitsbericht als mdBook, siehe [Dokument/README.md](Dokument/README.md) |
 
