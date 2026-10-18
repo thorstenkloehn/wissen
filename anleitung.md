@@ -129,6 +129,8 @@ sudo sh -c 'set -a; . /etc/wissen/wissen.env; dotnet /opt/wissen/cli/Wissen.Cli.
 
 Scheitert der Befehl mit `28P01`, stimmt das Passwort in der Umgebungsdatei nicht mit dem der Datenbankrolle überein.
 
+Die Web-App wendet ausstehende Migrationen auch selbst bei jedem Start an. Der Befehl hier zeigt einen Fehler aber sofort an, statt dass der Dienst nur immer wieder neu startet.
+
 ### 7. Dienst starten
 
 ```bash
@@ -261,6 +263,8 @@ sudo sh -c 'set -a; . /etc/wissen/wissen.env; dotnet /opt/wissen/cli/Wissen.Cli.
 sudo sh -c 'set -a; . /etc/wissen/wissen.env; dotnet /opt/wissen/cli/Wissen.Cli.dll seiten-rendern'
 sudo systemctl start wissen
 ```
+
+`migrate` vor `seiten-rendern` ist nötig, weil `seiten-rendern` schon das neue Schema braucht; sonst würde die Web-App die Migrationen beim Start auch selbst anwenden.
 
 `seiten-rendern` erzeugt das HTML aller Seiten und Versionen neu aus dem Markdown. Das ist nach jeder Änderung am `MarkdownRenderer` nötig, sonst gilt sie nicht für schon gespeicherte Seiten.
 

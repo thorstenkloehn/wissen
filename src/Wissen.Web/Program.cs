@@ -1,5 +1,6 @@
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Wissen.Web;
 using Wissen.Web.Areas.Identity;
 using Wissen.Infrastructure;
@@ -60,6 +61,19 @@ builder.Services.AddRazorPages(options =>
 });
 
 var app = builder.Build();
+
+// Ausstehende Migrationen bei jedem Start anwenden, damit die Datenbank nach einem Neustart zur
+// eingespielten Version passt. Scheitert das, startet die App nicht (systemd versucht es erneut).
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var pending = (await db.Database.GetPendingMigrationsAsync()).ToList();
+    if (pending.Count > 0)
+    {
+        await db.Database.MigrateAsync();
+        app.Logger.LogInformation("{Anzahl} Migration(en) angewendet: {Migrationen}", pending.Count, string.Join(", ", pending));
+    }
+}
 
 // Sicherheits-Header für jede Antwort. Die Content-Security-Policy erlaubt Skripte nur aus
 // eigenen Dateien: Inline-Skripte und onclick-Attribute in Views werden vom Browser blockiert.

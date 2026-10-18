@@ -73,7 +73,7 @@ Hier stehen die Schritte in Kurzform. Die ausführliche Anleitung für Ubuntu Se
 
 3. `deploy/wissen.env.example` nach `/etc/wissen/wissen.env` kopieren, Domain und Passwort eintragen und die Datei mit `chmod 600` schützen.
 
-4. Die Datenbanktabellen anlegen:
+4. Die Datenbanktabellen anlegen (die Web-App wendet ausstehende Migrationen zwar auch bei jedem Start selbst an, so sieht man einen Fehler aber sofort):
 
    ```bash
    sudo sh -c 'set -a; . /etc/wissen/wissen.env; dotnet /opt/wissen/cli/Wissen.Cli.dll migrate'
