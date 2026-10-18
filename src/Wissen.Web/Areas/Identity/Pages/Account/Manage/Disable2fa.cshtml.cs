@@ -41,7 +41,7 @@ namespace Wissen.Web.Areas.Identity.Pages.Account.Manage
 
             if (!await _userManager.GetTwoFactorEnabledAsync(user))
             {
-                throw new InvalidOperationException($"Cannot disable 2FA for user as it's not currently enabled.");
+                return RedirectToPage("./TwoFactorAuthentication");
             }
 
             return Page();

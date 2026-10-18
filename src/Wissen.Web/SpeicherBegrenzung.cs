@@ -42,7 +42,8 @@ public static class SpeicherBegrenzung
     public static string? Partition(HttpContext context)
     {
         var request = context.Request;
-        if (!HttpMethods.IsPost(request.Method) || !request.Path.StartsWithSegments("/seite", StringComparison.OrdinalIgnoreCase))
+        if (!HttpMethods.IsPost(request.Method)
+            || !AnmeldeBegrenzung.Pfad(request.Path).StartsWithSegments("/seite", StringComparison.OrdinalIgnoreCase))
         {
             return null;
         }

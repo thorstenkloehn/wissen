@@ -32,12 +32,26 @@ public static class AnmeldeBegrenzung
     {
         var request = context.Request;
         if (!HttpMethods.IsPost(request.Method)
-            || request.Path.Value?.StartsWith("/Identity/Account/Login", StringComparison.OrdinalIgnoreCase) != true)
+            || Pfad(request.Path).Value?.StartsWith("/Identity/Account/Login", StringComparison.OrdinalIgnoreCase) != true)
         {
             return null;
         }
 
         return Absender(context.Connection.RemoteIpAddress);
+    }
+
+    // Das Routing von ASP.NET Core fasst mehrere "/" zusammen ("//Identity//Account/Login" erreicht
+    // dieselbe Seite wie "/Identity/Account/Login"), Path.StartsWith und StartsWithSegments aber nicht;
+    // ohne Zusammenfassen ließe sich die Grenze mit doppelten Schrägstrichen (oder %2F) umgehen.
+    public static PathString Pfad(PathString path)
+    {
+        var value = path.Value;
+        if (value is null || !value.Contains("//", StringComparison.Ordinal))
+        {
+            return path;
+        }
+
+        return new PathString("/" + string.Join('/', value.Split('/', StringSplitOptions.RemoveEmptyEntries)));
     }
 
     // Bei IPv6 gehört meist ein ganzes /64-Netz demselben Anschluss; einzelne Adressen daraus

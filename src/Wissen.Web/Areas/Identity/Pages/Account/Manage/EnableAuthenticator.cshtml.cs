@@ -19,6 +19,7 @@ namespace Wissen.Web.Areas.Identity.Pages.Account.Manage
     public class EnableAuthenticatorModel : PageModel
     {
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly SignInManager<IdentityUser> _signInManager;
         private readonly ILogger<EnableAuthenticatorModel> _logger;
         private readonly UrlEncoder _urlEncoder;
 
@@ -26,10 +27,12 @@ namespace Wissen.Web.Areas.Identity.Pages.Account.Manage
 
         public EnableAuthenticatorModel(
             UserManager<IdentityUser> userManager,
+            SignInManager<IdentityUser> signInManager,
             ILogger<EnableAuthenticatorModel> logger,
             UrlEncoder urlEncoder)
         {
             _userManager = userManager;
+            _signInManager = signInManager;
             _logger = logger;
             _urlEncoder = urlEncoder;
         }
@@ -86,6 +89,13 @@ namespace Wissen.Web.Areas.Identity.Pages.Account.Manage
 
         public async Task<IActionResult> OnGetAsync()
         {
+            // Nicht als eingebettetes Bild (z. B. <img src="/Identity/Account/Manage/EnableAuthenticator">)
+            // ausführen: Das Anlegen eines ersten Schlüssels ändert den Sicherheitsstempel des Kontos.
+            if (Request.Headers["Sec-Fetch-Dest"] is [var ziel, ..] && !string.Equals(ziel, "document", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest();
+            }
+
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
             {
@@ -150,6 +160,7 @@ namespace Wissen.Web.Areas.Identity.Pages.Account.Manage
             {
                 await _userManager.ResetAuthenticatorKeyAsync(user);
                 unformattedKey = await _userManager.GetAuthenticatorKeyAsync(user);
+                await _signInManager.RefreshSignInAsync(user);
             }
 
             SharedKey = FormatKey(unformattedKey);

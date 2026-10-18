@@ -44,7 +44,15 @@ namespace Wissen.Web.Areas.Identity.Pages.Account
                 return NotFound($"Benutzer mit der ID '{userId}' konnte nicht geladen werden.");
             }
 
-            code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
+            try
+            {
+                code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
+            }
+            catch (FormatException)
+            {
+                StatusMessage = "Fehler beim Ändern der E-Mail-Adresse.";
+                return Page();
+            }
             var result = await _userManager.ChangeEmailAsync(user, email, code);
             if (!result.Succeeded)
             {

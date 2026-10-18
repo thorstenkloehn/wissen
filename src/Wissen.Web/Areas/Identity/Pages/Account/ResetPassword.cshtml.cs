@@ -80,14 +80,19 @@ namespace Wissen.Web.Areas.Identity.Pages.Account
             {
                 return BadRequest("Zum Zurücksetzen des Passworts muss ein Code angegeben werden.");
             }
-            else
+
+            try
             {
                 Input = new InputModel
                 {
                     Code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code))
                 };
-                return Page();
             }
+            catch (FormatException)
+            {
+                return BadRequest("Zum Zurücksetzen des Passworts muss ein gültiger Code angegeben werden.");
+            }
+            return Page();
         }
 
         public async Task<IActionResult> OnPostAsync()

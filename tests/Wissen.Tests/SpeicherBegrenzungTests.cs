@@ -22,6 +22,7 @@ public class SpeicherBegrenzungTests
 
     [Theory]
     [InlineData("/seite/neu")]
+    [InlineData("//seite//neu")]
     [InlineData("/Seite/bearbeiten/3")]
     [InlineData("/seite/3/version/2/zuruecksetzen")]
     [InlineData("/seite/loeschen/3")]

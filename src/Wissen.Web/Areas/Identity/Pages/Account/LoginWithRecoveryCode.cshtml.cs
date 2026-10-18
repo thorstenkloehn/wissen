@@ -64,7 +64,7 @@ namespace Wissen.Web.Areas.Identity.Pages.Account
             var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
             if (user == null)
             {
-                throw new InvalidOperationException($"Unable to load two-factor authentication user.");
+                return RedirectToPage("./Login");
             }
 
             ReturnUrl = returnUrl;
@@ -82,7 +82,7 @@ namespace Wissen.Web.Areas.Identity.Pages.Account
             var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
             if (user == null)
             {
-                throw new InvalidOperationException($"Unable to load two-factor authentication user.");
+                return RedirectToPage("./Login");
             }
 
             var recoveryCode = Input.RecoveryCode.Replace(" ", string.Empty);
@@ -103,6 +103,13 @@ namespace Wissen.Web.Areas.Identity.Pages.Account
             }
             else
             {
+                // TwoFactorRecoveryCodeSignInAsync zählt Fehlversuche in Identity nicht selbst mit.
+                await _userManager.AccessFailedAsync(user);
+                if (await _userManager.IsLockedOutAsync(user))
+                {
+                    _logger.LogWarning("User account locked out.");
+                    return RedirectToPage("./Lockout");
+                }
                 _logger.LogWarning("Invalid recovery code entered for user with ID '{UserId}' ", user.Id);
                 ModelState.AddModelError(string.Empty, "Ungültiger Wiederherstellungscode.");
                 return Page();

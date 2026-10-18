@@ -18,6 +18,7 @@ public class AnmeldeBegrenzungTests
     [Theory]
     [InlineData("POST", "/Identity/Account/Login")]
     [InlineData("POST", "/identity/account/login")]
+    [InlineData("POST", "//Identity//Account//Login")]
     [InlineData("POST", "/Identity/Account/LoginWith2fa")]
     [InlineData("POST", "/Identity/Account/LoginWithRecoveryCode")]
     public void Partition_CountsLoginAttemptsPerAddress(string method, string path)

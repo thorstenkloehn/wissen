@@ -35,7 +35,8 @@ public class RestoreXmlModule(SeitenXmlImport import) : ICommandModule
         IReadOnlyList<Seite> seiten;
         try
         {
-            seiten = import.Read(XDocument.Load(file));
+            using var reader = XmlReader.Create(file, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit });
+            seiten = import.Read(XDocument.Load(reader));
         }
         catch (Exception e) when (e is XmlException or FormatException)
         {

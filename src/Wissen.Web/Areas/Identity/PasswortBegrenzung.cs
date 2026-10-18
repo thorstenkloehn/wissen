@@ -18,6 +18,7 @@ public static class PasswortBegrenzung
     [
         "/Identity/Account/Manage/ChangePassword",
         "/Identity/Account/Manage/DeletePersonalData",
+        "/Identity/Account/Manage/EnableAuthenticator",
     ];
 
     public static PartitionedRateLimiter<HttpContext> CreateLimiter() =>
@@ -34,8 +35,9 @@ public static class PasswortBegrenzung
     public static string? Partition(HttpContext context)
     {
         var request = context.Request;
+        var pfad = AnmeldeBegrenzung.Pfad(request.Path);
         if (!HttpMethods.IsPost(request.Method)
-            || !Seiten.Any(seite => request.Path.StartsWithSegments(seite, StringComparison.OrdinalIgnoreCase)))
+            || !Seiten.Any(seite => pfad.StartsWithSegments(seite, StringComparison.OrdinalIgnoreCase)))
         {
             return null;
         }

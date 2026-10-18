@@ -23,7 +23,9 @@ public class PasswortBegrenzungTests
     [Theory]
     [InlineData("/Identity/Account/Manage/ChangePassword")]
     [InlineData("/identity/account/manage/changepassword/")]
+    [InlineData("//Identity//Account/Manage//ChangePassword")]
     [InlineData("/Identity/Account/Manage/DeletePersonalData")]
+    [InlineData("/Identity/Account/Manage/EnableAuthenticator")]
     public void Partition_CountsPasswordChecksPerAccount(string path)
     {
         Assert.Equal("konto:konto-1", PasswortBegrenzung.Partition(Request("POST", path)));

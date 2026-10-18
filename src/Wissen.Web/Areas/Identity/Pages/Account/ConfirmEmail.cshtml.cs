@@ -42,7 +42,15 @@ namespace Wissen.Web.Areas.Identity.Pages.Account
                 return NotFound($"Benutzer mit der ID '{userId}' konnte nicht geladen werden.");
             }
 
-            code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
+            try
+            {
+                code = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code));
+            }
+            catch (FormatException)
+            {
+                StatusMessage = "Fehler beim Bestätigen Ihrer E-Mail-Adresse.";
+                return Page();
+            }
             var result = await _userManager.ConfirmEmailAsync(user, code);
             StatusMessage = result.Succeeded ? "Vielen Dank, dass Sie Ihre E-Mail-Adresse bestätigt haben." : "Fehler beim Bestätigen Ihrer E-Mail-Adresse.";
             return Page();

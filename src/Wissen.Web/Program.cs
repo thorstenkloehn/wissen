@@ -43,9 +43,21 @@ builder.Services.AddRateLimiter(options =>
     };
 });
 
-// Seiten, die mit 404 antworten. „Passwort vergessen“ und „Bestätigungs-E-Mail erneut senden“ bewirken
-// ohne E-Mail-Versand nichts; ein neues Passwort setzt die Konsolenanwendung (konto-passwort).
-List<string> gesperrteSeiten = ["/Account/ForgotPassword", "/Account/ForgotPasswordConfirmation", "/Account/ResendEmailConfirmation"];
+// Seiten, die mit 404 antworten. Ohne E-Mail-Versand und externe Anmeldedienste bewirken diese
+// Seiten nichts; ein neues Passwort setzt die Konsolenanwendung (konto-passwort).
+List<string> gesperrteSeiten =
+[
+    "/Account/ForgotPassword",
+    "/Account/ForgotPasswordConfirmation",
+    "/Account/ResetPassword",
+    "/Account/ResetPasswordConfirmation",
+    "/Account/ResendEmailConfirmation",
+    "/Account/ConfirmEmail",
+    "/Account/ConfirmEmailChange",
+    "/Account/ExternalLogin",
+    "/Account/Manage/Email",
+    "/Account/Manage/ExternalLogins",
+];
 // Ohne "RegistrierungErlaubt": true kann sich niemand selbst ein Konto anlegen.
 if (!builder.Configuration.GetValue<bool>("RegistrierungErlaubt"))
 {
