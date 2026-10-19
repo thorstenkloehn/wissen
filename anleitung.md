@@ -165,6 +165,9 @@ server {
     listen [::]:80;
     server_name IHRE-DOMAIN.de;
 
+    # Keine nginx-Version in Fehlerseiten und im Header "Server".
+    server_tokens off;
+
     # Eine Seite darf 200 000 Zeichen Markdown haben; als Formular gesendet
     # ist das mehr als die Voreinstellung von 1 MB.
     client_max_body_size 4m;

@@ -22,5 +22,21 @@ ExecStartPost=/usr/bin/find /var/lib/wissen/backups -name '*.dump' -mtime +30 -d
 
 NoNewPrivileges=true
 PrivateTmp=true
-ProtectSystem=full
+ProtectSystem=strict
 ProtectHome=true
+# Weitere Einschränkungen: kein Zugriff auf Geräte, Kernel-Einstellungen und fremde Prozesse.
+# MemoryDenyWriteExecute fehlt bewusst: .NET erzeugt Maschinencode zur Laufzeit (JIT).
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+ProtectProc=invisible
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=

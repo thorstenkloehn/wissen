@@ -24,6 +24,14 @@ builder.Services.AddDefaultIdentity<IdentityUser>(options =>
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddErrorDescriber<GermanIdentityErrorDescriber>();
+// Außerhalb der Entwicklung (dort gibt es das Profil "http") geht das Anmelde-Cookie nur über HTTPS.
+if (!builder.Environment.IsDevelopment())
+{
+    builder.Services.ConfigureApplicationCookie(options => options.Cookie.SecurePolicy = CookieSecurePolicy.Always);
+    builder.Services.AddAntiforgery(options => options.Cookie.SecurePolicy = CookieSecurePolicy.Always);
+}
+// Ein Jahr statt der Voreinstellung von 30 Tagen: Der Browser fragt die Domain so lange nur per HTTPS an.
+builder.Services.AddHsts(options => options.MaxAge = TimeSpan.FromDays(365));
 builder.Services.AddControllersWithViews();
 builder.Services.AddRateLimiter(options =>
 {
@@ -107,6 +115,10 @@ app.Use(async (context, next) =>
     headers.XContentTypeOptions = "nosniff";
     headers.XFrameOptions = "SAMEORIGIN";
     headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    // Die App braucht weder Kamera, Mikrofon noch Standort; auch eingebettete Inhalte bekommen sie nicht.
+    headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=(), usb=()";
+    // Ein von hier geöffnetes fremdes Fenster bekommt keinen Zugriff auf dieses (window.opener).
+    headers["Cross-Origin-Opener-Policy"] = "same-origin";
     await next();
 });
 
@@ -118,7 +130,7 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    // Dauer siehe AddHsts oben.
     app.UseHsts();
 }
 
