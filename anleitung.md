@@ -271,6 +271,42 @@ sudo systemctl start wissen
 
 `seiten-rendern` erzeugt das HTML aller Seiten und Versionen neu aus dem Markdown. Das ist nach jeder Änderung am `MarkdownRenderer` nötig, sonst gilt sie nicht für schon gespeicherte Seiten.
 
+### Geänderte Vorlagen aus `deploy/` übernehmen
+
+Die Dateien unter `deploy/` werden beim Einspielen nicht automatisch übernommen. Haben sie sich seit dem letzten Mal geändert (`git log --oneline -- deploy/` auf dem eigenen Rechner), kommen sie zusätzlich an ihren Platz.
+
+**systemd-Dienste** (`wissen.service`, `wissen-backup.service`, `wissen-backup.timer`) im Ablauf oben nach dem Stoppen und vor `sudo systemctl start wissen` kopieren:
+
+```bash
+sudo cp ~/wissen-upload/deploy/wissen.service ~/wissen-upload/deploy/wissen-backup.service ~/wissen-upload/deploy/wissen-backup.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+```
+
+Danach prüfen, ob beide Dienste mit den neuen Einstellungen laufen und die Sicherung eine neue Datei anlegt:
+
+```bash
+systemctl status wissen
+sudo systemctl start wissen-backup && systemctl status wissen-backup
+sudo ls -l /var/lib/wissen/backups
+```
+
+Startet ein Dienst nicht, steht der Grund in `journalctl -u wissen -n 50` bzw. `journalctl -u wissen-backup -n 50`.
+
+**nginx:** `nginx-wissen.conf` **nicht** erneut nach `/etc/nginx/sites-available/wissen` kopieren, denn certbot hat dort die Einstellungen für HTTPS eingetragen (Schritt 9), und die gingen verloren. Stattdessen die geänderten Zeilen von Hand übernehmen. Nach certbot gibt es dort meist zwei `server`-Blöcke; Einstellungen wie `server_tokens off;` gehören in beide:
+
+```bash
+sudo nano /etc/nginx/sites-available/wissen
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+**Von außen kontrollieren** (auf dem eigenen Rechner):
+
+```bash
+curl -sI https://IHRE-DOMAIN.de/doc | grep -iE 'server|strict-transport|permissions|opener'
+```
+
+`Server` zeigt nur `nginx` ohne Versionsnummer, `Strict-Transport-Security` steht auf `max-age=31536000` (ein Jahr), und `Permissions-Policy` sowie `Cross-Origin-Opener-Policy` sind vorhanden.
+
 ### Konten verwalten
 
 Alle Befehle der Konsolenanwendung laufen auf dem Server nach demselben Muster:
