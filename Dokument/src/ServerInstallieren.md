@@ -126,6 +126,7 @@ sudo nano /etc/wissen/wissen.env
 In der Datei eintragen:
 
 - AllowedHosts='IHRE-DOMAIN.de'
-- in ConnectionStrings__DefaultConnection das Passwort anstelle von IHR_SERVER_PASSWORT
+- in ConnectionStrings__DefaultConnection das Passwort, das im Abschnitt „PostgreSQL installieren“ mit `\password thorsten` gesetzt wurde, anstelle von IHR_SERVER_PASSWORT
+- in ConnectionStrings__DefaultConnection `Database=wissen` in `Database=thorsten` und `Username=wissen` in `Username=thorsten` ändern
 
 Die übrigen Zeilen bleiben, wie sie sind. Wichtig für nginx ist ASPNETCORE_FORWARDEDHEADERS_ENABLED='true': Nur damit sieht die App die Adresse des Besuchers statt der von nginx. Ohne die Zeile teilten sich alle Besucher die Grenze von 5 Anmeldeversuchen in 5 Minuten.
