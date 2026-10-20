@@ -4,3 +4,4 @@
 - [Installieren](Installieren.md)
 - [Visual Studio Code Scaffolding](VisualStudioCodeScaffolding.md)
 - [Weitere Datei löschen](WeiterDateiLöschen.md)
+- [Server installieren](ServerInstallieren.md)
