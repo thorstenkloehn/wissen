@@ -52,7 +52,10 @@ osmosis --read-pbf file=schleswig-holstein-latest.osm.pbf --bounding-box left=10
 osm2pgsql -d thorsten -H localhost -U thorsten --create -G --hstore -W ahrensburg.pbf
 ```
 
+```
 sudo nano /etc/nginx/conf.d/start.conf
+```
+
 ```
 server {
     listen 443 ssl http2;
