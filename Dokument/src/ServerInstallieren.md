@@ -101,7 +101,7 @@ dotnet publish src/Wissen.Cli -c Release -o publish/cli
 rsync -a --delete publish/web publish/cli deploy BENUTZER@IHRE-DOMAIN.de:wissen-upload/
 ```
 
-appsettings.json wird nicht mit veröffentlicht, weil sie das Passwort der lokalen Datenbank enthält. Auf dem Server kommen alle Einstellungen aus der Umgebungsdatei (Schritt 5).
+appsettings.json wird nicht mit veröffentlicht, weil sie das Passwort der lokalen Datenbank enthält. Auf dem Server kommen alle Einstellungen aus der Umgebungsdatei.
 
 Auf dem Server die Dateien an ihren Platz legen:
 
@@ -126,6 +126,6 @@ sudo nano /etc/wissen/wissen.env
 In der Datei eintragen:
 
 - AllowedHosts='IHRE-DOMAIN.de'
-- in ConnectionStrings__DefaultConnection das Passwort aus Schritt 3 anstelle von IHR_SERVER_PASSWORT
+- in ConnectionStrings__DefaultConnection das Passwort anstelle von IHR_SERVER_PASSWORT
 
 Die übrigen Zeilen bleiben, wie sie sind. Wichtig für nginx ist ASPNETCORE_FORWARDEDHEADERS_ENABLED='true': Nur damit sieht die App die Adresse des Besuchers statt der von nginx. Ohne die Zeile teilten sich alle Besucher die Grenze von 5 Anmeldeversuchen in 5 Minuten.
