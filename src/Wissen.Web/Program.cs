@@ -95,13 +95,14 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Sicherheits-Header für jede Antwort. Die Content-Security-Policy erlaubt Skripte nur aus
-// eigenen Dateien: Inline-Skripte und onclick-Attribute in Views werden vom Browser blockiert.
+// Sicherheits-Header für jede Antwort. Die Content-Security-Policy erlaubt Skripte und Stile nur aus
+// eigenen Dateien: Inline-Skripte, onclick-, style-Attribute und <style> in Views blockiert der Browser.
+// Stile, die Skripte über element.style setzen (Bootstrap), sind davon nicht betroffen.
 var contentSecurityPolicy = string.Join("; ",
     "default-src 'self'",
     // Keine Bilder von fremden Servern: Sie verrieten dem fremden Server jeden Besucher der Seite.
     "img-src 'self' data:",
-    "style-src 'self' 'unsafe-inline'",
+    "style-src 'self'",
     // Hot Reload (dotnet watch) spricht in der Entwicklung über WebSockets mit dem Browser.
     app.Environment.IsDevelopment() ? "connect-src 'self' ws://localhost:* wss://localhost:*" : "connect-src 'self'",
     "object-src 'none'",

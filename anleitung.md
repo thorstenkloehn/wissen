@@ -160,6 +160,11 @@ sudo nano /etc/nginx/sites-available/wissen
 Die Vorlage enthält:
 
 ```nginx
+# Höchstens 10 Anfragen pro Sekunde je IP-Adresse an die App, kurzzeitig bis zu 50 mehr (eine Seite
+# lädt mit CSS und Skripten mehrere Dateien). Jede Seite fragt die Datenbank ab; ohne Grenze ließe sich
+# die App mit vielen Anfragen ausbremsen. Darüber antwortet nginx mit 429.
+limit_req_zone $binary_remote_addr zone=wissen:10m rate=10r/s;
+
 server {
     listen 80;
     listen [::]:80;
@@ -172,7 +177,10 @@ server {
     # ist das mehr als die Voreinstellung von 1 MB.
     client_max_body_size 4m;
 
+    limit_req_status 429;
+
     location / {
+        limit_req zone=wissen burst=50 nodelay;
         proxy_pass http://127.0.0.1:5000;
         proxy_http_version 1.1;
 
@@ -292,7 +300,7 @@ sudo ls -l /var/lib/wissen/backups
 
 Startet ein Dienst nicht, steht der Grund in `journalctl -u wissen -n 50` bzw. `journalctl -u wissen-backup -n 50`.
 
-**nginx:** `nginx-wissen.conf` **nicht** erneut nach `/etc/nginx/sites-available/wissen` kopieren, denn certbot hat dort die Einstellungen für HTTPS eingetragen (Schritt 9), und die gingen verloren. Stattdessen die geänderten Zeilen von Hand übernehmen. Nach certbot gibt es dort meist zwei `server`-Blöcke; Einstellungen wie `server_tokens off;` gehören in beide:
+**nginx:** `nginx-wissen.conf` **nicht** erneut nach `/etc/nginx/sites-available/wissen` kopieren, denn certbot hat dort die Einstellungen für HTTPS eingetragen (Schritt 9), und die gingen verloren. Stattdessen die geänderten Zeilen von Hand übernehmen. Nach certbot gibt es dort meist zwei `server`-Blöcke; Einstellungen wie `server_tokens off;` gehören in beide. Die Zeile `limit_req_zone` steht ganz oben, außerhalb der `server`-Blöcke, `limit_req` im Block `location /`:
 
 ```bash
 sudo nano /etc/nginx/sites-available/wissen
@@ -331,6 +339,7 @@ sudo sh -c 'set -a; . /etc/wissen/wissen.env; dotnet /opt/wissen/cli/Wissen.Cli.
 | `400 Bad Request` | Die Domain fehlt in `AllowedHosts`, oder in nginx fehlt `proxy_set_header Host $host;` |
 | Endlose Weiterleitung im Browser | In nginx fehlt `proxy_set_header X-Forwarded-Proto $scheme;`, oder `ASPNETCORE_FORWARDEDHEADERS_ENABLED` fehlt in der Umgebungsdatei |
 | `429` beim Anmelden schon nach wenigen Versuchen aller Besucher zusammen | `X-Forwarded-For` kommt nicht an, siehe Zeile darüber |
+| `429` von nginx beim gewöhnlichen Aufrufen von Seiten | Grenze `limit_req` in nginx; `rate` oder `burst` erhöhen |
 | `413 Request Entity Too Large` beim Speichern einer langen Seite | `client_max_body_size` in nginx fehlt oder ist zu klein |
 | `28P01` im Protokoll | Passwort in `/etc/wissen/wissen.env` passt nicht zur Datenbankrolle |
 | Nach jedem Neustart sind alle abgemeldet | `StateDirectory=wissen` und `Environment=HOME=/var/lib/wissen` fehlen in `wissen.service` |

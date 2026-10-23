@@ -315,6 +315,20 @@ public class SeiteControllerTests
     }
 
     [Fact]
+    public async Task Neu_RejectsTooManyCategories()
+    {
+        using var db = CreateContext();
+        var controller = new SeiteController(db);
+        var markdown = string.Concat(Enumerable.Range(0, Seite.MaxKategorien + 1).Select(i => $"[[Kategorie:K{i}]]\n"));
+
+        var result = await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", MarkdownInhalt = markdown });
+
+        Assert.IsType<ViewResult>(result);
+        Assert.True(controller.ModelState.ContainsKey(nameof(SeiteNeuViewModel.MarkdownInhalt)));
+        Assert.Equal(0, await db.Seiten.CountAsync());
+    }
+
+    [Fact]
     public async Task Neu_RejectsMarkdownWithTooMuchHtml()
     {
         using var db = CreateContext();

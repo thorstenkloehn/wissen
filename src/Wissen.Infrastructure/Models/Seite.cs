@@ -26,6 +26,10 @@ public partial class Seite
     // Fußnoten und Abkürzungen können ihn vervielfachen (200 000 Zeichen ergaben über 3 Millionen).
     public const int MaxHtmlLength = 3 * MaxMarkdownLength;
 
+    // Obergrenze für verschiedene Kategorien einer Seite. Jede Version speichert sie mit, und die Seite
+    // zeigt sie alle als Links an; 200 000 Zeichen Markdown reichten für über 10 000.
+    public const int MaxKategorien = 50;
+
     public int Id { get; set; }
 
     // Adresse der Seite ohne führenden Schrägstrich, z. B. "doc/einleitung"; eindeutig.

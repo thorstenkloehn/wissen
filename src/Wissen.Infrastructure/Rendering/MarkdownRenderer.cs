@@ -57,7 +57,8 @@ public static class MarkdownRenderer
 
         // Frei wählbare Klassen und Stile ({.position-fixed}, {style=...}, :::klasse) könnten die ganze
         // Seite überdecken, etwa mit einem unsichtbaren Link. Erlaubt bleibt nur, was Markdig selbst
-        // erzeugt: seine eigenen Klassen und die Ausrichtung von Tabellenspalten.
+        // erzeugt: seine eigenen Klassen und die Ausrichtung von Tabellenspalten. Die Ausrichtung wird in
+        // PostProcessNode zur Klasse, weil die Content-Security-Policy style-Attribute blockiert.
         sanitizer.AllowedAttributes.Add("class");
         foreach (var name in MarkdigClasses)
         {
@@ -85,6 +86,14 @@ public static class MarkdownRenderer
             {
                 return;
             }
+            if (element.GetAttribute("style") is { } style)
+            {
+                element.RemoveAttribute("style");
+                if (AlignmentClass(style) is { } klasse)
+                {
+                    element.ClassList.Add(klasse);
+                }
+            }
             if (element.GetAttribute("id") is { Length: > 0 } id)
             {
                 element.SetAttribute("id", IdPrefix + id);
@@ -100,6 +109,18 @@ public static class MarkdownRenderer
         };
         return sanitizer;
     }
+
+    // Die Bootstrap-Klasse zu "text-align: ..."; andere Werte (justify) entfallen.
+    private static string? AlignmentClass(string style) =>
+        style.Split(':', 2) is [var name, var wert] && name.Trim().Equals("text-align", StringComparison.OrdinalIgnoreCase)
+            ? wert.Trim().TrimEnd(';').Trim().ToLowerInvariant() switch
+            {
+                "left" or "start" => "text-start",
+                "center" => "text-center",
+                "right" or "end" => "text-end",
+                _ => null,
+            }
+            : null;
 
     // Fremd ist jede Adresse, die der Browser nicht auf dem eigenen Server auflöst.
     public static bool IsExternal(string url)
@@ -160,7 +181,8 @@ public static class MarkdownRenderer
     // weiterhin javascript:-Links und Attribute wie {onclick=...}; die entfernt erst der Sanitizer.
     // Mit maxHtmlLength bricht die Umsetzung ab, bevor der Sanitizer ein übergroßes HTML bearbeitet:
     // Seine Laufzeit wächst mit der Größe stark an (2,5 Millionen Zeichen brauchten über 20 Sekunden).
-    public static GerendertesMarkdown Render(string markdown, int maxHtmlLength = int.MaxValue)
+    // Mehr als maxKategorien verschiedene Kategorien lehnt die Umsetzung ebenfalls ab.
+    public static GerendertesMarkdown Render(string markdown, int maxHtmlLength = int.MaxValue, int maxKategorien = int.MaxValue)
     {
         string html;
         List<string> kategorien;
@@ -176,6 +198,10 @@ public static class MarkdownRenderer
             throw new MarkdownException("Der Inhalt ist zu tief verschachtelt oder enthält eine zu große Tabelle.", e);
         }
 
+        if (kategorien.Count > maxKategorien)
+        {
+            throw new MarkdownException($"Der Inhalt nennt {kategorien.Count} verschiedene Kategorien, erlaubt sind {maxKategorien}.");
+        }
         if (html.Length > maxHtmlLength)
         {
             throw new MarkdownException($"Aus dem Inhalt entsteht eine zu große Seite ({html.Length:N0} Zeichen HTML, erlaubt sind {maxHtmlLength:N0}). Bitte teilen Sie den Inhalt auf mehrere Seiten auf.");

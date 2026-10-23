@@ -50,7 +50,7 @@ public class SeiteController(ApplicationDbContext db) : Controller
         GerendertesMarkdown inhalt;
         try
         {
-            inhalt = MarkdownRenderer.Render(model.MarkdownInhalt!, Seite.MaxHtmlLength);
+            inhalt = MarkdownRenderer.Render(model.MarkdownInhalt!, Seite.MaxHtmlLength, Seite.MaxKategorien);
         }
         catch (MarkdownException e)
         {
@@ -232,7 +232,7 @@ public class SeiteController(ApplicationDbContext db) : Controller
         }
 
         // Vor jeder Änderung an der Seite: Lässt sich das Markdown nicht umsetzen, bleibt sie unberührt.
-        var inhalt = MarkdownRenderer.Render(markdownInhalt, Seite.MaxHtmlLength);
+        var inhalt = MarkdownRenderer.Render(markdownInhalt, Seite.MaxHtmlLength, Seite.MaxKategorien);
 
         var letzteNummer = await db.SeitenVersionen
             .Where(v => v.SeiteId == seite.Id)

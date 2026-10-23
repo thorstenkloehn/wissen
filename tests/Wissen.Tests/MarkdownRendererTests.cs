@@ -44,8 +44,9 @@ public class MarkdownRendererTests
             """);
 
         Assert.Contains("<h1 id=\"inhalt-titel\">", html);
-        Assert.Contains("text-align: center", html);
-        Assert.Contains("text-align: right", html);
+        Assert.Contains("class=\"text-center\"", html);
+        Assert.Contains("class=\"text-end\"", html);
+        Assert.DoesNotContain("style=", html);
         Assert.Contains("class=\"task-list-item\"", html);
         Assert.Contains("class=\"footnote-ref\"", html);
         Assert.Contains("class=\"language-csharp\"", html);
@@ -237,5 +238,26 @@ public class MarkdownRendererTests
         Assert.Equal(["A"], ergebnis.Kategorien);
         Assert.Contains("<a href=\"/doc\">Link</a>", ergebnis.Html);
         Assert.Contains("<a href=\"/y\">[x]</a>", ergebnis.Html);
+    }
+
+    [Theory]
+    [InlineData("Absatz {style=\"text-align: center\"}", "<p class=\"text-center\">")]
+    [InlineData("Absatz {style=\"TEXT-ALIGN:left;\"}", "<p class=\"text-start\">")]
+    [InlineData("Absatz {style=\"text-align: justify\"}", "<p>")]
+    public void ToHtml_TurnsAlignmentIntoClass(string markdown, string erwartet)
+    {
+        var html = MarkdownRenderer.ToHtml(markdown);
+
+        Assert.StartsWith(erwartet, html);
+        Assert.DoesNotContain("style=", html);
+    }
+
+    [Fact]
+    public void Render_LimitsNumberOfCategories()
+    {
+        var markdown = string.Concat(Enumerable.Range(1, 3).Select(i => $"[[Kategorie:K{i}]] [[Kategorie:K{i}]] "));
+
+        Assert.Equal(3, MarkdownRenderer.Render(markdown, maxKategorien: 3).Kategorien.Count);
+        Assert.Throws<MarkdownException>(() => MarkdownRenderer.Render(markdown, maxKategorien: 2));
     }
 }
