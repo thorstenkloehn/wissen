@@ -6,7 +6,7 @@ namespace Wissen.Infrastructure.Rendering;
 // Fehler nennt die Stände, deren Markdown sich nicht umsetzen ließ; sie behalten ihr bisheriges HTML.
 public record SeitenRendernResult(int Seiten, int SeitenGeaendert, int Versionen, int VersionenGeaendert, IReadOnlyList<string> Fehler);
 
-// Erzeugt das gespeicherte HTML aller Seiten und Versionen neu aus dem Markdown. Seite.Inhalt wird
+// Erzeugt das gespeicherte HTML und die Kategorien aller Seiten und Versionen neu aus dem Markdown. Seite.Inhalt wird
 // roh ausgegeben und entsteht nur beim Speichern: Ohne diesen Schritt gälte eine strengere Regel
 // des MarkdownRenderer nicht für Seiten, die vorher gespeichert wurden.
 public class SeitenRendern(ApplicationDbContext db)
@@ -27,18 +27,21 @@ public class SeitenRendern(ApplicationDbContext db)
                 continue;
             }
 
-            if (ToHtml(seite.MarkdownInhalt, $"Seite »{seite.Path}«", fehler) is { } inhalt && inhalt != seite.Inhalt)
+            if (Render(seite.MarkdownInhalt, $"Seite »{seite.Path}«", fehler) is { } inhalt
+                && (inhalt.Html != seite.Inhalt || !inhalt.Kategorien.SequenceEqual(seite.Kategorien)))
             {
-                seite.Inhalt = inhalt;
+                seite.Inhalt = inhalt.Html;
+                seite.Kategorien = inhalt.Kategorien;
                 seitenGeaendert++;
             }
             foreach (var version in seite.Versionen.OrderBy(v => v.Nummer))
             {
                 versionen++;
-                if (ToHtml(version.MarkdownInhalt, $"Version {version.Nummer} der Seite »{seite.Path}«", fehler) is { } versionInhalt
-                    && versionInhalt != version.Inhalt)
+                if (Render(version.MarkdownInhalt, $"Version {version.Nummer} der Seite »{seite.Path}«", fehler) is { } versionInhalt
+                    && (versionInhalt.Html != version.Inhalt || !versionInhalt.Kategorien.SequenceEqual(version.Kategorien)))
                 {
-                    version.Inhalt = versionInhalt;
+                    version.Inhalt = versionInhalt.Html;
+                    version.Kategorien = versionInhalt.Kategorien;
                     versionenGeaendert++;
                 }
             }
@@ -54,11 +57,11 @@ public class SeitenRendern(ApplicationDbContext db)
     }
 
     // Wie restore-xml ohne Obergrenze für das HTML: Was gespeichert ist, soll sich auch erneuern lassen.
-    private static string? ToHtml(string markdown, string ort, List<string> fehler)
+    private static GerendertesMarkdown? Render(string markdown, string ort, List<string> fehler)
     {
         try
         {
-            return MarkdownRenderer.ToHtml(markdown);
+            return MarkdownRenderer.Render(markdown);
         }
         catch (MarkdownException e)
         {

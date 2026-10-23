@@ -16,7 +16,7 @@ public class SeiteViewModelTests
     {
         var markdown = new string('x', Seite.MaxMarkdownLength + ueberGrenze);
 
-        Assert.Equal(gueltig, IsValid(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "k", MarkdownInhalt = markdown }));
-        Assert.Equal(gueltig, IsValid(new SeiteBearbeitenViewModel { Kategorie = "k", MarkdownInhalt = markdown }));
+        Assert.Equal(gueltig, IsValid(new SeiteNeuViewModel { Path = "doc/x", MarkdownInhalt = markdown }));
+        Assert.Equal(gueltig, IsValid(new SeiteBearbeitenViewModel { MarkdownInhalt = markdown }));
     }
 }

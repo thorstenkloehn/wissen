@@ -17,15 +17,12 @@ public class SeitenXmlImportTests
         <seiten erstelltAm="2026-10-08T15:51:37Z">
           <seite id="7">
             <path>doc/x</path>
-            <kategorie>Technik</kategorie>
             <markdown># Neu</markdown>
             <versionsgeschichte>
               <version nummer="1" erstelltAm="2026-10-08T15:01:00Z">
-                <kategorie>Allgemein</kategorie>
                 <markdown>alt</markdown>
               </version>
               <version nummer="2" erstelltAm="2026-10-08T15:11:00Z" autor="anna@example.org">
-                <kategorie>Technik</kategorie>
                 <markdown># Neu</markdown>
               </version>
             </versionsgeschichte>
@@ -44,13 +41,11 @@ public class SeitenXmlImportTests
         Assert.Equal(new SeitenXmlImportResult(1, 0), result);
         var seite = await db.Seiten.Include(s => s.Versionen).SingleAsync();
         Assert.Equal("doc/x", seite.Path);
-        Assert.Equal("Technik", seite.Kategorie);
         Assert.Equal("# Neu", seite.MarkdownInhalt);
         Assert.Contains("<h1", seite.Inhalt);
         Assert.Equal([1, 2], seite.Versionen.Select(v => v.Nummer).Order());
         var erste = seite.Versionen.Single(v => v.Nummer == 1);
         Assert.Equal("alt", erste.MarkdownInhalt);
-        Assert.Equal("Allgemein", erste.Kategorie);
         Assert.Equal(new DateTime(2026, 10, 8, 15, 1, 0, DateTimeKind.Utc), erste.ErstelltAm);
         Assert.Equal(DateTimeKind.Utc, erste.ErstelltAm.Kind);
     }
@@ -65,11 +60,10 @@ public class SeitenXmlImportTests
             db.Seiten.Add(new Seite
             {
                 Path = "doc/x",
-                Kategorie = "Vorher",
                 MarkdownInhalt = "vorher",
                 Versionen = [new SeitenVersion { Nummer = 1, MarkdownInhalt = "vorher" }, new SeitenVersion { Nummer = 5, MarkdownInhalt = "weg" }],
             });
-            db.Seiten.Add(new Seite { Path = "doc/bleibt", Kategorie = "Allgemein", MarkdownInhalt = "bleibt" });
+            db.Seiten.Add(new Seite { Path = "doc/bleibt", MarkdownInhalt = "bleibt" });
             await db.SaveChangesAsync();
             id = (await db.Seiten.SingleAsync(s => s.Path == "doc/x")).Id;
         }
@@ -114,6 +108,39 @@ public class SeitenXmlImportTests
     }
 
     [Fact]
+    public void Read_TakesCategoriesFromMarkdown()
+    {
+        using var db = CreateContext();
+        var xml = Xml.Replace("<markdown>alt</markdown>", "<markdown>alt [[Kategorie:A]] [[Kategorie:B]]</markdown>");
+
+        var seite = Assert.Single(new SeitenXmlImport(db).Read(XDocument.Parse(xml)));
+
+        Assert.Empty(seite.Kategorien);
+        var erste = seite.Versionen.Single(v => v.Nummer == 1);
+        Assert.Equal(["A", "B"], erste.Kategorien);
+        Assert.Equal("alt [[Kategorie:A]] [[Kategorie:B]]", erste.MarkdownInhalt);
+    }
+
+    // Dateien aus der Zeit vor den Kategorien im Markdown haben ein Element <kategorie>.
+    [Fact]
+    public void Read_AppendsCategoryFromOlderFilesToMarkdown()
+    {
+        using var db = CreateContext();
+        var xml = Xml
+            .Replace("<path>doc/x</path>", "<path>doc/x</path><kategorie> Technik </kategorie>")
+            .Replace("<markdown>alt</markdown>", "<kategorie>Allgemein</kategorie><markdown>alt [[Kategorie:Allgemein]]</markdown>");
+
+        var seite = Assert.Single(new SeitenXmlImport(db).Read(XDocument.Parse(xml)));
+
+        Assert.Equal("# Neu\n\n[[Kategorie:Technik]]", seite.MarkdownInhalt);
+        Assert.Equal(["Technik"], seite.Kategorien);
+        Assert.DoesNotContain("Kategorie", seite.Inhalt);
+        var erste = seite.Versionen.Single(v => v.Nummer == 1);
+        Assert.Equal("alt [[Kategorie:Allgemein]]", erste.MarkdownInhalt);
+        Assert.Equal(["Allgemein"], erste.Kategorien);
+    }
+
+    [Fact]
     public void Read_TakesAuthorWhereTheFileNamesOne()
     {
         using var db = CreateContext();
@@ -142,7 +169,7 @@ public class SeitenXmlImportTests
     [InlineData("<path>doc/x</path>", "")]
     [InlineData("<path>doc/x</path>", "<path>doc/a b</path>")]
     [InlineData("<path>doc/x</path>", "<path>../etc</path>")]
-    [InlineData("<kategorie>Technik</kategorie>\n    <markdown># Neu</markdown>\n    <versionsgeschichte>", "<kategorie>Technik</kategorie>\n    <versionsgeschichte>")]
+    [InlineData("<markdown># Neu</markdown>\n    <versionsgeschichte>", "<versionsgeschichte>")]
     [InlineData("nummer=\"2\"", "nummer=\"1\"")]
     [InlineData("nummer=\"2\"", "nummer=\"zwei\"")]
     [InlineData("erstelltAm=\"2026-10-08T15:11:00Z\"", "erstelltAm=\"gestern\"")]

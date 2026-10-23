@@ -26,18 +26,19 @@ public class SeiteControllerTests
         var result = await new SeiteController(db).Neu(new SeiteNeuViewModel
         {
             Path = " /doc/einleitung/ ",
-            Kategorie = " Allgemein ",
-            MarkdownInhalt = "# Titel",
+            MarkdownInhalt = "# Titel\n\n[[Kategorie:Allgemein]]",
         });
 
         Assert.Equal("/doc/einleitung", Assert.IsType<LocalRedirectResult>(result).Url);
         var seite = await db.Seiten.Include(s => s.Versionen).SingleAsync();
         Assert.Equal("doc/einleitung", seite.Path);
-        Assert.Equal("Allgemein", seite.Kategorie);
-        Assert.Equal("# Titel", seite.MarkdownInhalt);
+        Assert.Equal(["Allgemein"], seite.Kategorien);
+        Assert.Equal("# Titel\n\n[[Kategorie:Allgemein]]", seite.MarkdownInhalt);
         Assert.Contains("<h1", seite.Inhalt);
+        Assert.DoesNotContain("Kategorie", seite.Inhalt);
         var version = Assert.Single(seite.Versionen);
         Assert.Equal(1, version.Nummer);
+        Assert.Equal(["Allgemein"], version.Kategorien);
         Assert.Equal(seite.Inhalt, version.Inhalt);
     }
 
@@ -49,7 +50,6 @@ public class SeiteControllerTests
         await new SeiteController(db).Neu(new SeiteNeuViewModel
         {
             Path = "doc/x",
-            Kategorie = "Allgemein",
             MarkdownInhalt = "<script>alert(1)</script>",
         });
 
@@ -66,7 +66,7 @@ public class SeiteControllerTests
     {
         using var db = CreateContext();
 
-        await new SeiteController(db).Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = markdown });
+        await new SeiteController(db).Neu(new SeiteNeuViewModel { Path = "doc/x", MarkdownInhalt = markdown });
 
         Assert.DoesNotContain(forbidden, (await db.Seiten.SingleAsync()).Inhalt);
     }
@@ -79,7 +79,6 @@ public class SeiteControllerTests
         await new SeiteController(db).Neu(new SeiteNeuViewModel
         {
             Path = "doc/x",
-            Kategorie = "Allgemein",
             MarkdownInhalt = "# Titel\n\n[Link](https://example.org) und [Mail](mailto:a@example.org)\n\n| a | b |\n|---|---|\n| 1 | 2 |",
         });
 
@@ -101,7 +100,6 @@ public class SeiteControllerTests
         var result = await controller.Neu(new SeiteNeuViewModel
         {
             Path = "doc/x",
-            Kategorie = "Allgemein",
             MarkdownInhalt = "Text",
         });
 
@@ -115,19 +113,20 @@ public class SeiteControllerTests
     {
         using var db = CreateContext();
         var controller = new SeiteController(db);
-        await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "alt" });
+        await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", MarkdownInhalt = "alt [[Kategorie:Allgemein]]" });
         var id = (await db.Seiten.SingleAsync()).Id;
 
-        var result = await controller.Bearbeiten(id, new SeiteBearbeitenViewModel { Kategorie = "Technik", MarkdownInhalt = "**neu**" });
+        var result = await controller.Bearbeiten(id, new SeiteBearbeitenViewModel { MarkdownInhalt = "**neu**\n\n[[Kategorie:Technik]] [[Kategorie:Hauptseite]]" });
 
         Assert.Equal("/doc/x", Assert.IsType<LocalRedirectResult>(result).Url);
         var seite = await db.Seiten.Include(s => s.Versionen).SingleAsync();
-        Assert.Equal("Technik", seite.Kategorie);
-        Assert.Equal("**neu**", seite.MarkdownInhalt);
-        Assert.Contains("<strong>neu</strong>", seite.Inhalt);
+        Assert.Equal(["Technik", "Hauptseite"], seite.Kategorien);
+        Assert.Equal("<p><strong>neu</strong></p>\n", seite.Inhalt);
         Assert.Equal([1, 2], seite.Versionen.Select(v => v.Nummer).Order());
-        Assert.Equal("alt", seite.Versionen.Single(v => v.Nummer == 1).MarkdownInhalt);
-        Assert.Equal("**neu**", seite.Versionen.Single(v => v.Nummer == 2).MarkdownInhalt);
+        Assert.Equal("alt [[Kategorie:Allgemein]]", seite.Versionen.Single(v => v.Nummer == 1).MarkdownInhalt);
+        Assert.Equal(["Allgemein"], seite.Versionen.Single(v => v.Nummer == 1).Kategorien);
+        Assert.Equal(["Technik", "Hauptseite"], seite.Versionen.Single(v => v.Nummer == 2).Kategorien);
+        Assert.Equal("**neu**\n\n[[Kategorie:Technik]] [[Kategorie:Hauptseite]]", seite.Versionen.Single(v => v.Nummer == 2).MarkdownInhalt);
     }
 
     [Fact]
@@ -135,10 +134,10 @@ public class SeiteControllerTests
     {
         using var db = CreateContext();
         var controller = new SeiteController(db);
-        await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "Text" });
+        await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", MarkdownInhalt = "Text" });
         var id = (await db.Seiten.SingleAsync()).Id;
 
-        await controller.Bearbeiten(id, new SeiteBearbeitenViewModel { Kategorie = "Allgemein", MarkdownInhalt = "Text" });
+        await controller.Bearbeiten(id, new SeiteBearbeitenViewModel { MarkdownInhalt = "Text" });
 
         Assert.Equal(1, await db.SeitenVersionen.CountAsync());
     }
@@ -156,9 +155,9 @@ public class SeiteControllerTests
     {
         using var db = CreateContext();
         var controller = new SeiteController(db);
-        await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "alt" });
+        await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", MarkdownInhalt = "alt" });
         var id = (await db.Seiten.SingleAsync()).Id;
-        await controller.Bearbeiten(id, new SeiteBearbeitenViewModel { Kategorie = "Allgemein", MarkdownInhalt = "neu" });
+        await controller.Bearbeiten(id, new SeiteBearbeitenViewModel { MarkdownInhalt = "neu" });
 
         var version = Assert.IsType<SeitenVersion>(Assert.IsType<ViewResult>(await controller.Version(id, 1)).Model);
 
@@ -172,16 +171,15 @@ public class SeiteControllerTests
     {
         using var db = CreateContext();
         var controller = new SeiteController(db);
-        await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "alt" });
+        await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", MarkdownInhalt = "alt" });
         var id = (await db.Seiten.SingleAsync()).Id;
-        await controller.Bearbeiten(id, new SeiteBearbeitenViewModel { Kategorie = "Technik", MarkdownInhalt = "neu" });
+        await controller.Bearbeiten(id, new SeiteBearbeitenViewModel { MarkdownInhalt = "neu" });
 
         var result = await controller.Zuruecksetzen(id, 1);
 
         Assert.Equal("/doc/x", Assert.IsType<LocalRedirectResult>(result).Url);
         var seite = await db.Seiten.Include(s => s.Versionen).SingleAsync();
         Assert.Equal("alt", seite.MarkdownInhalt);
-        Assert.Equal("Allgemein", seite.Kategorie);
         Assert.Contains("alt", seite.Inhalt);
         Assert.Equal([1, 2, 3], seite.Versionen.Select(v => v.Nummer).Order());
         Assert.Equal("neu", seite.Versionen.Single(v => v.Nummer == 2).MarkdownInhalt);
@@ -193,7 +191,7 @@ public class SeiteControllerTests
     {
         using var db = CreateContext();
         var controller = new SeiteController(db);
-        await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "Text" });
+        await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", MarkdownInhalt = "Text" });
         var id = (await db.Seiten.SingleAsync()).Id;
 
         await controller.Zuruecksetzen(id, 1);
@@ -207,10 +205,10 @@ public class SeiteControllerTests
     {
         using var db = CreateContext();
         var controller = new SeiteController(db);
-        await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "alt" });
-        await controller.Neu(new SeiteNeuViewModel { Path = "doc/y", Kategorie = "Allgemein", MarkdownInhalt = "bleibt" });
+        await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", MarkdownInhalt = "alt" });
+        await controller.Neu(new SeiteNeuViewModel { Path = "doc/y", MarkdownInhalt = "bleibt" });
         var id = (await db.Seiten.SingleAsync(s => s.Path == "doc/x")).Id;
-        await controller.Bearbeiten(id, new SeiteBearbeitenViewModel { Kategorie = "Allgemein", MarkdownInhalt = "neu" });
+        await controller.Bearbeiten(id, new SeiteBearbeitenViewModel { MarkdownInhalt = "neu" });
 
         var result = await controller.LoeschenBestaetigt(id);
 
@@ -225,9 +223,9 @@ public class SeiteControllerTests
     {
         using var db = CreateContext();
         var controller = new SeiteController(db);
-        await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "alt" });
+        await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", MarkdownInhalt = "alt" });
         var id = (await db.Seiten.SingleAsync()).Id;
-        await controller.Bearbeiten(id, new SeiteBearbeitenViewModel { Kategorie = "Allgemein", MarkdownInhalt = "neu" });
+        await controller.Bearbeiten(id, new SeiteBearbeitenViewModel { MarkdownInhalt = "neu" });
 
         var seite = Assert.IsType<Seite>(Assert.IsType<ViewResult>(await CreateDocController(db, angemeldet: true).HandleAll("doc/x")).Model);
 
@@ -238,7 +236,7 @@ public class SeiteControllerTests
     public async Task Doc_Anonymous_GetsContentWithoutVersions()
     {
         using var db = CreateContext();
-        await new SeiteController(db).Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "Text" });
+        await new SeiteController(db).Neu(new SeiteNeuViewModel { Path = "doc/x", MarkdownInhalt = "Text" });
 
         var seite = Assert.IsType<Seite>(Assert.IsType<ViewResult>(await CreateDocController(db, angemeldet: false).HandleAll("doc/x")).Model);
 
@@ -280,7 +278,7 @@ public class SeiteControllerTests
     public async Task Doc_AnswersExistingPageWithoutStatus()
     {
         using var db = CreateContext();
-        db.Seiten.Add(new Seite { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "x" });
+        db.Seiten.Add(new Seite { Path = "doc/x", MarkdownInhalt = "x" });
         await db.SaveChangesAsync();
 
         var result = Assert.IsType<ViewResult>(await CreateDocController(db, angemeldet: false).HandleAll("doc/x"));
@@ -309,7 +307,7 @@ public class SeiteControllerTests
         using var db = CreateContext();
         var controller = new SeiteController(db);
 
-        var result = await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = new string('>', 10_000) });
+        var result = await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", MarkdownInhalt = new string('>', 10_000) });
 
         Assert.IsType<ViewResult>(result);
         Assert.True(controller.ModelState.ContainsKey(nameof(SeiteNeuViewModel.MarkdownInhalt)));
@@ -322,7 +320,7 @@ public class SeiteControllerTests
         using var db = CreateContext();
         var controller = new SeiteController(db);
 
-        var result = await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = ZuGrossesMarkdown });
+        var result = await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", MarkdownInhalt = ZuGrossesMarkdown });
 
         Assert.IsType<ViewResult>(result);
         Assert.True(controller.ModelState.ContainsKey(nameof(SeiteNeuViewModel.MarkdownInhalt)));
@@ -334,17 +332,16 @@ public class SeiteControllerTests
     {
         using var db = CreateContext();
         var controller = new SeiteController(db);
-        await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "alt" });
+        await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", MarkdownInhalt = "alt" });
         var id = (await db.Seiten.SingleAsync()).Id;
 
-        var result = await controller.Bearbeiten(id, new SeiteBearbeitenViewModel { Kategorie = "Technik", MarkdownInhalt = ZuGrossesMarkdown });
+        var result = await controller.Bearbeiten(id, new SeiteBearbeitenViewModel { MarkdownInhalt = ZuGrossesMarkdown });
 
         var model = Assert.IsType<SeiteBearbeitenViewModel>(Assert.IsType<ViewResult>(result).Model);
         Assert.Equal("doc/x", model.Path);
         Assert.True(controller.ModelState.ContainsKey(nameof(SeiteBearbeitenViewModel.MarkdownInhalt)));
         db.ChangeTracker.Clear();
         var seite = await db.Seiten.Include(s => s.Versionen).SingleAsync();
-        Assert.Equal("Allgemein", seite.Kategorie);
         Assert.Equal("alt", seite.MarkdownInhalt);
         Assert.Single(seite.Versionen);
     }
@@ -365,9 +362,9 @@ public class SeiteControllerTests
     public async Task EveryVersionRecordsTheAccountThatSavedIt()
     {
         using var db = CreateContext();
-        await AngemeldetAls(db, "anna@example.org").Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "eins" });
+        await AngemeldetAls(db, "anna@example.org").Neu(new SeiteNeuViewModel { Path = "doc/x", MarkdownInhalt = "eins" });
         var id = (await db.Seiten.SingleAsync()).Id;
-        await AngemeldetAls(db, "bert@example.org").Bearbeiten(id, new SeiteBearbeitenViewModel { Kategorie = "Allgemein", MarkdownInhalt = "zwei" });
+        await AngemeldetAls(db, "bert@example.org").Bearbeiten(id, new SeiteBearbeitenViewModel { MarkdownInhalt = "zwei" });
         await AngemeldetAls(db, "carla@example.org").Zuruecksetzen(id, 1);
 
         var autoren = await db.SeitenVersionen.OrderBy(v => v.Nummer).Select(v => v.Autor).ToListAsync();
@@ -399,7 +396,7 @@ public class SeiteControllerTests
         using var db = CreateContext(doppelt);
         var controller = new SeiteController(db);
 
-        var result = await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "eins" });
+        var result = await controller.Neu(new SeiteNeuViewModel { Path = "doc/x", MarkdownInhalt = "eins" });
 
         Assert.IsType<ViewResult>(result);
         Assert.True(controller.ModelState.ContainsKey(nameof(SeiteNeuViewModel.Path)));
@@ -410,12 +407,12 @@ public class SeiteControllerTests
     {
         var doppelt = new DoppelterWert();
         using var db = CreateContext(doppelt);
-        await new SeiteController(db).Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "eins" });
+        await new SeiteController(db).Neu(new SeiteNeuViewModel { Path = "doc/x", MarkdownInhalt = "eins" });
         var id = (await db.Seiten.SingleAsync()).Id;
         doppelt.Aktiv = true;
         var controller = new SeiteController(db);
 
-        var result = await controller.Bearbeiten(id, new SeiteBearbeitenViewModel { Kategorie = "Allgemein", MarkdownInhalt = "zwei" });
+        var result = await controller.Bearbeiten(id, new SeiteBearbeitenViewModel { MarkdownInhalt = "zwei" });
 
         var model = Assert.IsType<SeiteBearbeitenViewModel>(Assert.IsType<ViewResult>(result).Model);
         Assert.Equal("doc/x", model.Path);
@@ -427,9 +424,9 @@ public class SeiteControllerTests
     {
         var doppelt = new DoppelterWert();
         using var db = CreateContext(doppelt);
-        await new SeiteController(db).Neu(new SeiteNeuViewModel { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "eins" });
+        await new SeiteController(db).Neu(new SeiteNeuViewModel { Path = "doc/x", MarkdownInhalt = "eins" });
         var id = (await db.Seiten.SingleAsync()).Id;
-        await new SeiteController(db).Bearbeiten(id, new SeiteBearbeitenViewModel { Kategorie = "Allgemein", MarkdownInhalt = "zwei" });
+        await new SeiteController(db).Bearbeiten(id, new SeiteBearbeitenViewModel { MarkdownInhalt = "zwei" });
         doppelt.Aktiv = true;
 
         var result = await new SeiteController(db).Zuruecksetzen(id, 1);
@@ -449,7 +446,7 @@ public class SeiteNeuViewModelTests
     [InlineData("doc/<script>", false)]
     public void Path_IsValidated(string path, bool expected)
     {
-        var model = new SeiteNeuViewModel { Path = path, Kategorie = "Allgemein", MarkdownInhalt = "Text" };
+        var model = new SeiteNeuViewModel { Path = path, MarkdownInhalt = "Text" };
 
         var valid = System.ComponentModel.DataAnnotations.Validator.TryValidateObject(
             model, new System.ComponentModel.DataAnnotations.ValidationContext(model), null, validateAllProperties: true);

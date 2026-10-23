@@ -184,4 +184,58 @@ public class MarkdownRendererTests
         Assert.True(ziele.Count >= 3);
         Assert.All(ziele, ziel => Assert.Contains($"id=\"{ziel}\"", html));
     }
+
+    [Fact]
+    public void Render_TakesCategoriesOutOfTheHtml()
+    {
+        var ergebnis = MarkdownRenderer.Render("""
+            # Titel
+
+            Text mit [[Kategorie: Technik ]] mittendrin.
+
+            [[Kategorie:Hauptseite]]
+            [[Kategorie:Technik]]
+            """);
+
+        Assert.Equal(["Technik", "Hauptseite"], ergebnis.Kategorien);
+        Assert.DoesNotContain("Kategorie", ergebnis.Html);
+        // Der Absatz, der nur aus Kategorien bestand, entfällt.
+        Assert.Equal(2, System.Text.RegularExpressions.Regex.Count(ergebnis.Html, "<(h1|p)[ >]"));
+    }
+
+    [Fact]
+    public void Render_WithoutCategories()
+    {
+        var ergebnis = MarkdownRenderer.Render("# Titel");
+
+        Assert.Empty(ergebnis.Kategorien);
+        Assert.Equal(MarkdownRenderer.ToHtml("# Titel"), ergebnis.Html);
+    }
+
+    [Theory]
+    [InlineData("`[[Kategorie:A]]`")]
+    [InlineData("```\n[[Kategorie:A]]\n```")]
+    [InlineData("    [[Kategorie:A]]")]
+    [InlineData("\\[[Kategorie:A]]")]
+    [InlineData("[[Kategorie:]]")]
+    [InlineData("[[Kategorie:A|B]]")]
+    [InlineData("[[Kategorie:A]")]
+    [InlineData("[[kategorie:A]]")]
+    public void Render_LeavesOtherTextAlone(string markdown)
+    {
+        var ergebnis = MarkdownRenderer.Render(markdown);
+
+        Assert.Empty(ergebnis.Kategorien);
+        Assert.Contains("ategorie:", ergebnis.Html);
+    }
+
+    [Fact]
+    public void Render_KeepsLinksWorking()
+    {
+        var ergebnis = MarkdownRenderer.Render("[[Kategorie:A]] [Link](/doc) [[x]](/y)");
+
+        Assert.Equal(["A"], ergebnis.Kategorien);
+        Assert.Contains("<a href=\"/doc\">Link</a>", ergebnis.Html);
+        Assert.Contains("<a href=\"/y\">[x]</a>", ergebnis.Html);
+    }
 }

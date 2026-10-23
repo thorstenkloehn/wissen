@@ -158,34 +158,35 @@ dotnet run --project src/Wissen.Cli -- backup-xml            # nach backups/seit
 dotnet run --project src/Wissen.Cli -- backup-xml seiten.xml # in eine bestimmte Datei
 ```
 
-Die Datei enthält je Seite Id, Pfad, Kategorie, Markdown und alle Versionen mit Nummer, Zeitpunkt (in UTC) und, soweit bekannt, dem Konto, das sie gespeichert hat (`autor`):
+Die Datei enthält je Seite Id, Pfad, Markdown (samt den Kategorien darin) und alle Versionen mit Nummer, Zeitpunkt (in UTC) und, soweit bekannt, dem Konto, das sie gespeichert hat (`autor`):
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <seiten erstelltAm="2026-10-08T15:51:37.3426179Z">
   <seite id="1">
     <path>doc</path>
-    <kategorie>Hauptseite</kategorie>
     <markdown>## start
 
-Willkommen auf meine Seite</markdown>
+Willkommen auf meine Seite
+
+[[Kategorie:Hauptseite]]</markdown>
     <versionsgeschichte>
       <version nummer="1" erstelltAm="2026-10-08T15:01:19.957186Z">
-        <kategorie>Hauptseite</kategorie>
         <markdown>## start</markdown>
       </version>
       <version nummer="2" erstelltAm="2026-10-08T15:11:27.135033Z" autor="name@example.org">
-        <kategorie>Hauptseite</kategorie>
         <markdown>## start
 
-Willkommen auf meine Seite</markdown>
+Willkommen auf meine Seite
+
+[[Kategorie:Hauptseite]]</markdown>
       </version>
     </versionsgeschichte>
   </seite>
 </seiten>
 ```
 
-Nicht enthalten sind die Konten (nur die E-Mail-Adressen der Autoren) und das erzeugte HTML; das HTML entsteht beim Einlesen neu aus dem Markdown.
+Nicht enthalten sind die Konten (nur die E-Mail-Adressen der Autoren) und das erzeugte HTML; das HTML entsteht beim Einlesen neu aus dem Markdown. Ältere Dateien mit einem Element `<kategorie>` lassen sich weiter einlesen: Die Kategorie wird als `[[Kategorie:…]]` ans Markdown angehängt.
 
 Einlesen:
 
@@ -220,7 +221,7 @@ Was der Befehl in welchem Fall meldet:
 | `dotnet run --project src/Wissen.Cli -- help` | Befehle der Konsolenanwendung anzeigen |
 | `dotnet ef migrations add <Name> --project src/Wissen.Infrastructure --startup-project src/Wissen.Web` | neue Migration erzeugen |
 | `dotnet run --project src/Wissen.Cli -- migrate` | Migrationen auf PostgreSQL anwenden |
-| `dotnet run --project src/Wissen.Cli -- seiten-rendern [--pruefen]` | HTML aller Seiten und Versionen neu aus dem Markdown erzeugen (nach einem Update ausführen) |
+| `dotnet run --project src/Wissen.Cli -- seiten-rendern [--pruefen]` | HTML und Kategorien aller Seiten und Versionen neu aus dem Markdown erzeugen (nach einem Update ausführen) |
 | `dotnet run --project src/Wissen.Cli -- konto-anlegen <E-Mail> [--admin]` | Konto anlegen, das sich sofort anmelden kann |
 | `dotnet run --project src/Wissen.Cli -- konto-admin <E-Mail> [--entziehen]` | Rolle Administrator (darf Seiten löschen) geben oder wegnehmen |
 | `dotnet run --project src/Wissen.Cli -- konto-passwort <E-Mail>` | neues Passwort für ein Konto setzen |

@@ -42,11 +42,10 @@ public class SeiteController(ApplicationDbContext db) : Controller
             return View(model);
         }
 
-        var kategorie = model.Kategorie!.Trim();
-        string inhalt;
+        GerendertesMarkdown inhalt;
         try
         {
-            inhalt = MarkdownRenderer.ToHtml(model.MarkdownInhalt!, Seite.MaxHtmlLength);
+            inhalt = MarkdownRenderer.Render(model.MarkdownInhalt!, Seite.MaxHtmlLength);
         }
         catch (MarkdownException e)
         {
@@ -57,16 +56,16 @@ public class SeiteController(ApplicationDbContext db) : Controller
         var seite = new Seite
         {
             Path = path,
-            Kategorie = kategorie,
             MarkdownInhalt = model.MarkdownInhalt!,
-            Inhalt = inhalt,
+            Inhalt = inhalt.Html,
+            Kategorien = inhalt.Kategorien,
         };
         seite.Versionen.Add(new SeitenVersion
         {
             Nummer = 1,
-            Kategorie = kategorie,
             MarkdownInhalt = model.MarkdownInhalt!,
-            Inhalt = inhalt,
+            Inhalt = inhalt.Html,
+            Kategorien = [.. inhalt.Kategorien],
             Autor = User?.Identity?.Name,
         });
 
@@ -97,7 +96,6 @@ public class SeiteController(ApplicationDbContext db) : Controller
         return View(new SeiteBearbeitenViewModel
         {
             Path = seite.Path,
-            Kategorie = seite.Kategorie,
             MarkdownInhalt = seite.MarkdownInhalt,
         });
     }
@@ -120,7 +118,7 @@ public class SeiteController(ApplicationDbContext db) : Controller
 
         try
         {
-            await AendereSeite(seite, model.Kategorie!.Trim(), model.MarkdownInhalt!);
+            await AendereSeite(seite, model.MarkdownInhalt!);
         }
         catch (MarkdownException e)
         {
@@ -203,7 +201,7 @@ public class SeiteController(ApplicationDbContext db) : Controller
 
         try
         {
-            await AendereSeite(seite, version.Kategorie, version.MarkdownInhalt);
+            await AendereSeite(seite, version.MarkdownInhalt);
         }
         // Nur bei Versionen möglich, die nicht über das Formular entstanden sind (restore-xml).
         catch (MarkdownException e)
@@ -218,33 +216,33 @@ public class SeiteController(ApplicationDbContext db) : Controller
         return RedirectToSeite(seite.Path);
     }
 
-    // Übernimmt Kategorie und Markdown in die Seite und hängt eine neue Version an; als Autor gilt
+    // Übernimmt das Markdown (samt der Kategorien darin) in die Seite und hängt eine neue Version an; als Autor gilt
     // das angemeldete Konto, auch beim Zurücksetzen auf einen früheren Stand.
     // Ohne Änderung entsteht keine neue Version.
-    private async Task AendereSeite(Seite seite, string kategorie, string markdownInhalt)
+    private async Task AendereSeite(Seite seite, string markdownInhalt)
     {
-        if (kategorie == seite.Kategorie && markdownInhalt == seite.MarkdownInhalt)
+        if (markdownInhalt == seite.MarkdownInhalt)
         {
             return;
         }
 
         // Vor jeder Änderung an der Seite: Lässt sich das Markdown nicht umsetzen, bleibt sie unberührt.
-        var inhalt = MarkdownRenderer.ToHtml(markdownInhalt, Seite.MaxHtmlLength);
+        var inhalt = MarkdownRenderer.Render(markdownInhalt, Seite.MaxHtmlLength);
 
         var letzteNummer = await db.SeitenVersionen
             .Where(v => v.SeiteId == seite.Id)
             .MaxAsync(v => (int?)v.Nummer) ?? 0;
 
-        seite.Kategorie = kategorie;
         seite.MarkdownInhalt = markdownInhalt;
-        seite.Inhalt = inhalt;
+        seite.Inhalt = inhalt.Html;
+        seite.Kategorien = inhalt.Kategorien;
         db.SeitenVersionen.Add(new SeitenVersion
         {
             SeiteId = seite.Id,
             Nummer = letzteNummer + 1,
-            Kategorie = seite.Kategorie,
             MarkdownInhalt = seite.MarkdownInhalt,
             Inhalt = seite.Inhalt,
+            Kategorien = [.. seite.Kategorien],
             Autor = User?.Identity?.Name,
         });
         await db.SaveChangesAsync();

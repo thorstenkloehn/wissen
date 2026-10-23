@@ -16,7 +16,7 @@ public class SeitenVersion
 
     public string MarkdownInhalt { get; set; } = string.Empty;
 
-    public string Kategorie { get; set; } = string.Empty;
+    public List<string> Kategorien { get; set; } = [];
 
     public DateTime ErstelltAm { get; set; } = DateTime.UtcNow;
 

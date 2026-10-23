@@ -18,15 +18,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             seite.ToTable("Seiten");
             seite.Property(s => s.Path).HasMaxLength(Seite.MaxPathLength);
-            seite.Property(s => s.Kategorie).HasMaxLength(200);
             seite.HasIndex(s => s.Path).IsUnique();
-            seite.HasIndex(s => s.Kategorie);
+            seite.HasIndex(s => s.Kategorien).HasMethod("gin");
         });
 
         builder.Entity<SeitenVersion>(version =>
         {
             version.ToTable("SeitenVersionen");
-            version.Property(v => v.Kategorie).HasMaxLength(200);
             version.Property(v => v.Autor).HasMaxLength(256);
             version.HasIndex(v => new { v.SeiteId, v.Nummer }).IsUnique();
             version.HasOne(v => v.Seite)

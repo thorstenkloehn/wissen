@@ -1,19 +1,32 @@
 using AngleSharp.Dom;
 using Ganss.Xss;
 using Markdig;
+using Markdig.Parsers.Inlines;
+using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
 
 namespace Wissen.Infrastructure.Rendering;
 
 // Das Markdown lässt sich nicht in HTML umsetzen; die Meldung ist für den Benutzer bestimmt.
 public class MarkdownException(string message, Exception? innerException = null) : Exception(message, innerException);
 
+// Das HTML für Seite.Inhalt und die Kategorien aus dem Markdown, in der Reihenfolge ihres ersten Auftretens.
+public record GerendertesMarkdown(string Html, List<string> Kategorien);
+
 // Erzeugt aus dem Markdown einer Seite das HTML für Seite.Inhalt.
 public static class MarkdownRenderer
 {
-    private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
-        .UseAdvancedExtensions()
-        .DisableHtml()
-        .Build();
+    private static readonly MarkdownPipeline Pipeline = CreatePipeline();
+
+    private static MarkdownPipeline CreatePipeline()
+    {
+        var builder = new MarkdownPipelineBuilder()
+            .UseAdvancedExtensions()
+            .DisableHtml();
+        // Vor dem Link-Parser, der sonst "[[" als Beginn eines Links liest.
+        builder.InlineParsers.InsertBefore<LinkInlineParser>(new KategorieParser());
+        return builder.Build();
+    }
 
     // Klassen, die Markdig selbst erzeugt (Fußnoten, Aufgabenlisten, Formeln, Diagramme).
     private static readonly string[] MarkdigClasses =
@@ -140,16 +153,22 @@ public static class MarkdownRenderer
         return link;
     }
 
+    public static string ToHtml(string markdown, int maxHtmlLength = int.MaxValue) =>
+        Render(markdown, maxHtmlLength).Html;
+
     // Seite.Inhalt wird roh ausgegeben. DisableHtml allein genügt dafür nicht: Markdown erlaubt
     // weiterhin javascript:-Links und Attribute wie {onclick=...}; die entfernt erst der Sanitizer.
     // Mit maxHtmlLength bricht die Umsetzung ab, bevor der Sanitizer ein übergroßes HTML bearbeitet:
     // Seine Laufzeit wächst mit der Größe stark an (2,5 Millionen Zeichen brauchten über 20 Sekunden).
-    public static string ToHtml(string markdown, int maxHtmlLength = int.MaxValue)
+    public static GerendertesMarkdown Render(string markdown, int maxHtmlLength = int.MaxValue)
     {
         string html;
+        List<string> kategorien;
         try
         {
-            html = Markdown.ToHtml(markdown, Pipeline);
+            var document = Markdown.Parse(markdown, Pipeline);
+            kategorien = KategorienEntfernen(document);
+            html = Markdown.ToHtml(document, Pipeline);
         }
         // Markdig bricht bei zu tiefer Verschachtelung und bei übergroßen Tabellen mit diesen Ausnahmen ab.
         catch (Exception e) when (e is ArgumentException or OverflowException)
@@ -161,6 +180,35 @@ public static class MarkdownRenderer
         {
             throw new MarkdownException($"Aus dem Inhalt entsteht eine zu große Seite ({html.Length:N0} Zeichen HTML, erlaubt sind {maxHtmlLength:N0}). Bitte teilen Sie den Inhalt auf mehrere Seiten auf.");
         }
-        return Sanitizer.Sanitize(html);
+        return new(Sanitizer.Sanitize(html), kategorien);
     }
+
+    // Nimmt die Kategorien aus dem Dokument, damit sie nicht im HTML erscheinen. Ein Absatz, der nur
+    // aus Kategorien bestand, entfällt ganz statt als leeres <p> stehen zu bleiben.
+    private static List<string> KategorienEntfernen(MarkdownDocument document)
+    {
+        var kategorien = new List<string>();
+        foreach (var kategorie in document.Descendants<KategorieInline>().ToList())
+        {
+            if (!kategorien.Contains(kategorie.Name))
+            {
+                kategorien.Add(kategorie.Name);
+            }
+            Inline wurzel = kategorie;
+            while (wurzel.Parent is { } parent)
+            {
+                wurzel = parent;
+            }
+            var absatz = (wurzel as ContainerInline)?.ParentBlock as ParagraphBlock;
+            kategorie.Remove();
+            if (absatz?.Inline is { } inhalt && inhalt.All(IstLeer))
+            {
+                absatz.Parent?.Remove(absatz);
+            }
+        }
+        return kategorien;
+    }
+
+    private static bool IstLeer(Inline inline) =>
+        inline is LineBreakInline || (inline is LiteralInline literal && literal.Content.IsEmptyOrWhitespace());
 }

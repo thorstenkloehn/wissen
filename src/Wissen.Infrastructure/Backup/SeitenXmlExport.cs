@@ -5,8 +5,8 @@ using Wissen.Infrastructure.Data;
 
 namespace Wissen.Infrastructure.Backup;
 
-// Schreibt alle Seiten samt Versionsgeschichte als XML: Id, Pfad, Kategorie und Markdown.
-// Das erzeugte HTML (Seite.Inhalt) fehlt bewusst, es lässt sich aus dem Markdown neu erzeugen.
+// Schreibt alle Seiten samt Versionsgeschichte als XML: Id, Pfad und Markdown. Das erzeugte HTML
+// (Seite.Inhalt) und die Kategorien fehlen bewusst, beides entsteht neu aus dem Markdown.
 public class SeitenXmlExport(ApplicationDbContext db)
 {
     public async Task<XDocument> CreateAsync(CancellationToken cancellationToken = default)
@@ -24,7 +24,6 @@ public class SeitenXmlExport(ApplicationDbContext db)
                     new XElement("seite",
                         new XAttribute("id", seite.Id),
                         new XElement("path", Clean(seite.Path)),
-                        new XElement("kategorie", Clean(seite.Kategorie)),
                         new XElement("markdown", Clean(seite.MarkdownInhalt)),
                         new XElement("versionsgeschichte",
                             seite.Versionen.OrderBy(v => v.Nummer).Select(version =>
@@ -32,7 +31,6 @@ public class SeitenXmlExport(ApplicationDbContext db)
                                     new XAttribute("nummer", version.Nummer),
                                     new XAttribute("erstelltAm", version.ErstelltAm),
                                     version.Autor is null ? null : new XAttribute("autor", Clean(version.Autor)),
-                                    new XElement("kategorie", Clean(version.Kategorie)),
                                     new XElement("markdown", Clean(version.MarkdownInhalt)))))))));
     }
 

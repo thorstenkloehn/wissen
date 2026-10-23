@@ -10,7 +10,7 @@ public class SeitenRendernModule(SeitenRendern rendern) : ICommandModule
 
     public string Usage => $"seiten-rendern [{CheckOption}]";
 
-    public string Description => $"Erzeugt das HTML aller Seiten und Versionen neu aus dem Markdown ({CheckOption}: nur zählen, nichts ändern).";
+    public string Description => $"Erzeugt HTML und Kategorien aller Seiten und Versionen neu aus dem Markdown ({CheckOption}: nur zählen, nichts ändern).";
 
     public async Task<int> RunAsync(string[] args, CancellationToken cancellationToken)
     {
@@ -23,8 +23,8 @@ public class SeitenRendernModule(SeitenRendern rendern) : ICommandModule
 
         var result = await rendern.RunAsync(speichern: !check, cancellationToken);
         Console.WriteLine(check
-            ? $"{result.Seiten} Seite(n) und {result.Versionen} Version(en) geprüft: Bei {result.SeitenGeaendert} Seite(n) und {result.VersionenGeaendert} Version(en) würde sich das HTML ändern. Es wurde nichts geändert."
-            : $"{result.Seiten} Seite(n) und {result.Versionen} Version(en) neu erzeugt: Bei {result.SeitenGeaendert} Seite(n) und {result.VersionenGeaendert} Version(en) hat sich das HTML geändert.");
+            ? $"{result.Seiten} Seite(n) und {result.Versionen} Version(en) geprüft: Bei {result.SeitenGeaendert} Seite(n) und {result.VersionenGeaendert} Version(en) würden sich HTML oder Kategorien ändern. Es wurde nichts geändert."
+            : $"{result.Seiten} Seite(n) und {result.Versionen} Version(en) neu erzeugt: Bei {result.SeitenGeaendert} Seite(n) und {result.VersionenGeaendert} Version(en) haben sich HTML oder Kategorien geändert.");
         if (result.Fehler.Count == 0)
         {
             return 0;

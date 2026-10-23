@@ -35,12 +35,13 @@ public class SeitenXmlImport(ApplicationDbContext db)
             }
 
             var markdown = Required(element, "markdown", $"der Seite »{path}«");
+            var inhalt = Render(ref markdown, element, $"der Seite »{path}«");
             var seite = new Seite
             {
                 Path = path,
-                Kategorie = Kategorie(element, $"der Seite »{path}«"),
                 MarkdownInhalt = markdown,
-                Inhalt = ToHtml(markdown, $"der Seite »{path}«"),
+                Inhalt = inhalt.Html,
+                Kategorien = inhalt.Kategorien,
             };
 
             foreach (var versionElement in element.Element("versionsgeschichte")?.Elements("version") ?? [])
@@ -66,12 +67,13 @@ public class SeitenXmlImport(ApplicationDbContext db)
                 }
 
                 var versionMarkdown = Required(versionElement, "markdown", ort);
+                var versionInhalt = Render(ref versionMarkdown, versionElement, $"der Version {nummer} der Seite »{path}«");
                 seite.Versionen.Add(new SeitenVersion
                 {
                     Nummer = nummer,
-                    Kategorie = Kategorie(versionElement, ort),
                     MarkdownInhalt = versionMarkdown,
-                    Inhalt = ToHtml(versionMarkdown, $"der Version {nummer} der Seite »{path}«"),
+                    Inhalt = versionInhalt.Html,
+                    Kategorien = versionInhalt.Kategorien,
                     ErstelltAm = erstelltAm,
                     Autor = Autor(versionElement, nummer, path),
                 });
@@ -108,9 +110,9 @@ public class SeitenXmlImport(ApplicationDbContext db)
             if (vorhanden.TryGetValue(seite.Path, out var alt))
             {
                 // Die vorhandene Seite behält ihre Id; Inhalt und Versionsgeschichte kommen aus der Datei.
-                alt.Kategorie = seite.Kategorie;
                 alt.MarkdownInhalt = seite.MarkdownInhalt;
                 alt.Inhalt = seite.Inhalt;
+                alt.Kategorien = seite.Kategorien;
                 db.SeitenVersionen.RemoveRange(alt.Versionen);
                 foreach (var version in seite.Versionen)
                 {
@@ -128,11 +130,33 @@ public class SeitenXmlImport(ApplicationDbContext db)
         return new SeitenXmlImportResult(seiten.Count - vorhanden.Count, vorhanden.Count);
     }
 
-    private static string ToHtml(string markdown, string ort)
+    // Dateien aus der Zeit vor den Kategorien im Markdown haben ein Element <kategorie>. Damit die
+    // Kategorie erhalten bleibt, wird sie wie bei der Migration KategorienImMarkdown ans Markdown
+    // angehängt, sofern es sie nicht schon enthält.
+    private static GerendertesMarkdown Render(ref string markdown, XElement element, string ort)
+    {
+        var inhalt = Render(markdown, ort);
+        var kategorie = element.Element("kategorie")?.Value.Trim();
+        if (string.IsNullOrEmpty(kategorie) || inhalt.Kategorien.Contains(kategorie))
+        {
+            return inhalt;
+        }
+
+        var angehaengt = $"{markdown}\n\n{KategorieParser.Anfang}{kategorie}]]";
+        var neu = Render(angehaengt, ort);
+        if (!neu.Kategorien.Contains(kategorie))
+        {
+            throw new FormatException($"Die Kategorie »{kategorie}« {ort} lässt sich nicht als [[Kategorie:…]] ins Markdown übernehmen.");
+        }
+        markdown = angehaengt;
+        return neu;
+    }
+
+    private static GerendertesMarkdown Render(string markdown, string ort)
     {
         try
         {
-            return MarkdownRenderer.ToHtml(markdown);
+            return MarkdownRenderer.Render(markdown);
         }
         catch (MarkdownException e)
         {
@@ -154,13 +178,5 @@ public class SeitenXmlImport(ApplicationDbContext db)
         return autor.Length <= 256
             ? autor
             : throw new FormatException($"Das Attribut autor der Version {nummer} der Seite »{path}« ist länger als 256 Zeichen.");
-    }
-
-    private static string Kategorie(XElement element, string ort)
-    {
-        var kategorie = Required(element, "kategorie", ort).Trim();
-        return kategorie.Length <= 200
-            ? kategorie
-            : throw new FormatException($"Die Kategorie {ort} ist länger als 200 Zeichen.");
     }
 }

@@ -18,7 +18,6 @@ public class SeitenRendernTests
         db.Seiten.Add(new Seite
         {
             Path = "doc/alt",
-            Kategorie = "Allgemein",
             MarkdownInhalt = "# Titel",
             Inhalt = "<h1 id=\"titel\" onclick=\"alert(1)\">Titel</h1>",
             Versionen =
@@ -27,9 +26,41 @@ public class SeitenRendernTests
                 new SeitenVersion { Nummer = 2, MarkdownInhalt = "# Titel", Inhalt = "<h1 id=\"titel\" onclick=\"alert(1)\">Titel</h1>" },
             ],
         });
-        db.Seiten.Add(new Seite { Path = "doc/neu", Kategorie = "Allgemein", MarkdownInhalt = "neu", Inhalt = MarkdownRenderer.ToHtml("neu") });
+        db.Seiten.Add(new Seite { Path = "doc/neu", MarkdownInhalt = "neu", Inhalt = MarkdownRenderer.ToHtml("neu") });
         await db.SaveChangesAsync();
         return name;
+    }
+
+    [Fact]
+    public async Task Run_TakesCategoriesFromMarkdown()
+    {
+        var name = Guid.NewGuid().ToString();
+        using (var db = CreateContext(name))
+        {
+            // Vor den Kategorien im Markdown stand die Angabe als Text im HTML.
+            db.Seiten.Add(new Seite
+            {
+                Path = "doc/x",
+                MarkdownInhalt = "Text\n\n[[Kategorie:A]] [[Kategorie:B]]",
+                Inhalt = "<p>Text</p>\n<p>[[Kategorie:A]] [[Kategorie:B]]</p>\n",
+                Kategorien = ["A"],
+                Versionen = [new SeitenVersion { Nummer = 1, MarkdownInhalt = "[[Kategorie:C]]", Inhalt = "" }],
+            });
+            await db.SaveChangesAsync();
+        }
+
+        using (var db = CreateContext(name))
+        {
+            Assert.Equal(new SeitenRendernResult(1, 1, 1, 1, []), (await new SeitenRendern(db).RunAsync(speichern: true)) with { Fehler = [] });
+        }
+
+        using (var db = CreateContext(name))
+        {
+            var seite = await db.Seiten.Include(s => s.Versionen).SingleAsync();
+            Assert.Equal(["A", "B"], seite.Kategorien);
+            Assert.Equal("<p>Text</p>\n", seite.Inhalt);
+            Assert.Equal(["C"], seite.Versionen.Single().Kategorien);
+        }
     }
 
     [Fact]
@@ -81,8 +112,8 @@ public class SeitenRendernTests
         var name = Guid.NewGuid().ToString();
         using (var db = CreateContext(name))
         {
-            db.Seiten.Add(new Seite { Path = "doc/tief", Kategorie = "Allgemein", MarkdownInhalt = new string('>', 10_000), Inhalt = "<p>alt</p>" });
-            db.Seiten.Add(new Seite { Path = "doc/x", Kategorie = "Allgemein", MarkdownInhalt = "x", Inhalt = "" });
+            db.Seiten.Add(new Seite { Path = "doc/tief", MarkdownInhalt = new string('>', 10_000), Inhalt = "<p>alt</p>" });
+            db.Seiten.Add(new Seite { Path = "doc/x", MarkdownInhalt = "x", Inhalt = "" });
             await db.SaveChangesAsync();
         }
 

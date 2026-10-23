@@ -35,7 +35,8 @@ public partial class Seite
 
     public string MarkdownInhalt { get; set; } = string.Empty;
 
-    public string Kategorie { get; set; } = string.Empty;
+    // Die Kategorien aus dem Markdown ([[Kategorie:Name]]), beim Umsetzen ermittelt; auch keine.
+    public List<string> Kategorien { get; set; } = [];
 
     public List<SeitenVersion> Versionen { get; set; } = [];
 }

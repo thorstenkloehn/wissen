@@ -6,9 +6,9 @@
 <h1>@ViewData["Title"]</h1>
 <p>
     Früherer Stand der Seite <a href="/@Model.Seite.Path">@Model.Seite.Path</a>
-    vom @Model.ErstelltAm.ToLocalTime().ToString("dd.MM.yyyy HH:mm") von @(Model.Autor ?? "unbekannt"), Kategorie: @Model.Kategorie
+    vom @Model.ErstelltAm.ToLocalTime().ToString("dd.MM.yyyy HH:mm") von @(Model.Autor ?? "unbekannt")
 </p>
-@if (Model.MarkdownInhalt != Model.Seite.MarkdownInhalt || Model.Kategorie != Model.Seite.Kategorie)
+@if (Model.MarkdownInhalt != Model.Seite.MarkdownInhalt)
 {
     <form asp-action="Zuruecksetzen" asp-route-id="@Model.SeiteId" asp-route-nummer="@Model.Nummer" method="post">
         <button type="submit" class="btn btn-warning">Seite auf diese Version zurücksetzen</button>
@@ -20,3 +20,4 @@ else
 }
 <hr />
 @Html.Raw(Model.Inhalt)
+<partial name="_Kategorien" model="Model.Kategorien" />
