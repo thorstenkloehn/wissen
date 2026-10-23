@@ -1,0 +1,21 @@
+﻿@model KategorieViewModel
+@{
+    ViewData["Title"] = $"Kategorie „{Model.Name}“";
+}
+
+<h1>@ViewData["Title"]</h1>
+@if (Model.Pfade.Count == 0)
+{
+    <p>Keine Seite nennt diese Kategorie.</p>
+}
+else
+{
+    <p>@Model.Pfade.Count @(Model.Pfade.Count == 1 ? "Seite" : "Seiten") in dieser Kategorie:</p>
+    <ul>
+        @foreach (var pfad in Model.Pfade)
+        {
+            <li><a href="/@string.Join('/', pfad.Split('/').Select(Uri.EscapeDataString))">@pfad</a></li>
+        }
+    </ul>
+}
+<p><a href="/@Wissen.Web.Controllers.KategorieController.Prefix">Alle Kategorien</a></p>

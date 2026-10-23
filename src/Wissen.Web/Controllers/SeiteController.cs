@@ -36,6 +36,11 @@ public class SeiteController(ApplicationDbContext db) : Controller
         }
 
         var path = model.Path!.Trim().Trim('/');
+        if (KategorieController.IstReserviert(path))
+        {
+            ModelState.AddModelError(nameof(model.Path), "Unter /kategorie/ zeigt die App die Kategorien; dort lässt sich keine Seite anlegen.");
+            return View(model);
+        }
         if (await db.Seiten.AnyAsync(s => s.Path == path))
         {
             ModelState.AddModelError(nameof(model.Path), "Unter diesem Pfad gibt es bereits eine Seite.");
