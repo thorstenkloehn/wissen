@@ -1,7 +1,8 @@
 ﻿@model Wissen.Infrastructure.Models.Seite?
 @{
-    // Eine vorhandene Seite bringt ihre Überschrift im Inhalt selbst mit.
-    ViewData["Title"] = Model?.Path ?? "Seite nicht vorhanden";
+    // Eine vorhandene Seite bringt ihre Überschrift im Inhalt selbst mit; der Browser-Tab zeigt sie
+    // ebenfalls (Seite.Titel), ohne Überschrift den Pfad.
+    ViewData["Title"] = Model is null ? "Seite nicht vorhanden" : Model.Titel ?? Model.Path;
     var angemeldet = User.Identity?.IsAuthenticated == true;
 }
 @if (Model is null)
