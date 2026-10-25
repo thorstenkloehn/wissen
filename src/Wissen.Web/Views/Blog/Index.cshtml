@@ -1,8 +1,8 @@
-@model List<BlogArtikel>
+@model BlogUebersicht
 @using System.Globalization
 @using Wissen.Web.Controllers
 @{
-    ViewData["Title"] = "Blog";
+    ViewData["Title"] = Model.Seite == 1 ? "Blog" : $"Blog – Seite {Model.Seite}";
     var deutsch = CultureInfo.GetCultureInfo("de-DE");
 }
 
@@ -25,14 +25,14 @@
         </div>
     </form>
 }
-@if (Model.Count == 0)
+@if (Model.Artikel.Count == 0)
 {
     <p>Noch gibt es keinen Artikel.</p>
 }
 else
 {
     // Nach Monaten gruppiert, die neuesten zuerst; die Reihenfolge kommt schon sortiert aus dem Controller.
-    foreach (var monat in Model.GroupBy(a => a.VeroeffentlichtAm?.ToLocalTime().ToString("MMMM yyyy", deutsch) ?? "Ohne Datum"))
+    foreach (var monat in Model.Artikel.GroupBy(a => a.VeroeffentlichtAm?.ToLocalTime().ToString("MMMM yyyy", deutsch) ?? "Ohne Datum"))
     {
         <h2 class="h4 mt-4">@monat.Key</h2>
         <ul class="list-unstyled">
@@ -57,4 +57,32 @@ else
             }
         </ul>
     }
+}
+@if (Model.Seiten > 1)
+{
+    <nav aria-label="Seiten des Blogs">
+        <ul class="pagination flex-wrap">
+            <li class="page-item @(Model.Seite == 1 ? "disabled" : "")">
+                <a class="page-link" href="@BlogController.UebersichtAdresse(Math.Max(1, Model.Seite - 1))">Neuere</a>
+            </li>
+            @foreach (var nummer in BlogController.Seitennummern(Model.Seite, Model.Seiten))
+            {
+                if (nummer is not { } n)
+                {
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                }
+                else if (n == Model.Seite)
+                {
+                    <li class="page-item active" aria-current="page"><span class="page-link">@n</span></li>
+                }
+                else
+                {
+                    <li class="page-item"><a class="page-link" href="@BlogController.UebersichtAdresse(n)">@n</a></li>
+                }
+            }
+            <li class="page-item @(Model.Seite == Model.Seiten ? "disabled" : "")">
+                <a class="page-link" href="@BlogController.UebersichtAdresse(Math.Min(Model.Seiten, Model.Seite + 1))">Ältere</a>
+            </li>
+        </ul>
+    </nav>
 }

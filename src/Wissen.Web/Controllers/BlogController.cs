@@ -22,6 +22,9 @@ public class BlogController(ApplicationDbContext db) : Controller
     // So viele der neuesten Artikel stehen im Feed, jeder mit seinem ganzen Inhalt.
     public const int FeedArtikel = 20;
 
+    // So viele Artikel zeigt eine Seite der Übersicht.
+    public const int ArtikelProSeite = 20;
+
     // Ob unter diesem Pfad die Übersicht statt einer Seite liegt; das Routing achtet nicht auf Groß- und Kleinschreibung.
     public static bool IstReserviert(string path) =>
         path.Equals(Prefix, StringComparison.OrdinalIgnoreCase);
@@ -31,20 +34,52 @@ public class BlogController(ApplicationDbContext db) : Controller
     public static string Titel(BlogArtikel artikel) =>
         artikel.Titel ?? artikel.Pfad.Split('/')[^1].Replace('-', ' ').Replace('_', ' ');
 
+    // Seite 1 liegt unter /blog, jede weitere unter /blog?seite=n. Eine Seite ohne Artikel gibt es nur
+    // als Seite 1, solange noch kein Artikel geschrieben ist; jede andere Nummer beantwortet die App mit 404.
     [HttpGet("")]
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(int seite = 1)
     {
-        // Das Datum eines Artikels ist das seiner ersten Version; für die Liste genügen Pfad, Titel, Datum und Kategorien.
-        var artikel = await db.Seiten
-            .AsNoTracking()
-            .Where(s => s.Typ == Inhaltstyp.Blogartikel)
+        var blogartikel = db.Seiten.AsNoTracking().Where(s => s.Typ == Inhaltstyp.Blogartikel);
+        var seiten = Math.Max(1, (await blogartikel.CountAsync() + ArtikelProSeite - 1) / ArtikelProSeite);
+        if (seite < 1 || seite > seiten)
+        {
+            return NotFound();
+        }
+
+        // Das Datum eines Artikels ist das seiner ersten Version; sortiert und abgeschnitten wird in der Datenbank,
+        // und für die Liste genügen Pfad, Titel, Datum und Kategorien.
+        var artikel = await blogartikel
+            .OrderByDescending(s => s.Versionen.Min(v => (DateTime?)v.ErstelltAm))
+            .ThenBy(s => s.Path)
+            .Skip((seite - 1) * ArtikelProSeite)
+            .Take(ArtikelProSeite)
             .Select(s => new BlogArtikel(s.Path, s.Titel, s.Versionen.Min(v => (DateTime?)v.ErstelltAm), s.Kategorien))
             .ToListAsync();
 
-        return View(artikel
-            .OrderByDescending(a => a.VeroeffentlichtAm)
-            .ThenBy(a => a.Pfad, StringComparer.Ordinal)
-            .ToList());
+        return View(new BlogUebersicht(artikel, seite, seiten));
+    }
+
+    // Adresse einer Seite der Übersicht.
+    public static string UebersichtAdresse(int seite) =>
+        seite == 1 ? "/" + Prefix : $"/{Prefix}?seite={seite}";
+
+    // Die Seitennummern, die die Navigation zeigt: die erste, die letzte und zwei um die aktuelle herum;
+    // null steht für eine Lücke („…“).
+    public static List<int?> Seitennummern(int seite, int seiten)
+    {
+        var nummern = new List<int?>();
+        for (var i = 1; i <= seiten; i++)
+        {
+            if (i == 1 || i == seiten || Math.Abs(i - seite) <= 2)
+            {
+                if (nummern.Count > 0 && nummern[^1] is { } vorige && i - vorige > 1)
+                {
+                    nummern.Add(null);
+                }
+                nummern.Add(i);
+            }
+        }
+        return nummern;
     }
 
     // RSS 2.0 mit den neuesten Artikeln. Der Autor fehlt bewusst: Es ist die E-Mail-Adresse des Kontos,

@@ -32,7 +32,9 @@ public class BlogControllerTests
 
         var result = Assert.IsType<ViewResult>(await new BlogController(db).Index());
 
-        var artikel = Assert.IsType<List<BlogArtikel>>(result.Model);
+        var uebersicht = Assert.IsType<BlogUebersicht>(result.Model);
+        Assert.Equal((1, 1), (uebersicht.Seite, uebersicht.Seiten));
+        var artikel = uebersicht.Artikel;
         Assert.Equal(["blog/neu", "blog/alt"], artikel.Select(a => a.Pfad));
         Assert.Equal(new DateTime(2026, 10, 1, 12, 0, 0, DateTimeKind.Utc), artikel[1].VeroeffentlichtAm);
         Assert.Equal(["Technik"], artikel[1].Kategorien);
@@ -190,5 +192,60 @@ public class BlogControllerTests
     public void AbsoluteAdressen_ResolvesAgainstArticle(string html, string erwartet)
     {
         Assert.Equal(erwartet, BlogController.AbsoluteAdressen(html, new Uri("https://wissen.example/blog/artikel")));
+    }
+
+    [Fact]
+    public async Task Index_SplitsArticlesIntoPages()
+    {
+        using var db = CreateContext();
+        // Artikel 0 ist der älteste, der letzte der neueste.
+        for (var i = 0; i < BlogController.ArtikelProSeite + 5; i++)
+        {
+            db.Seiten.Add(new Seite { Path = $"blog/a{i:D2}", Typ = Inhaltstyp.Blogartikel, Versionen = [new SeitenVersion { Nummer = 1, ErstelltAm = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddDays(i) }] });
+        }
+        await db.SaveChangesAsync();
+        var controller = new BlogController(db);
+
+        var erste = Assert.IsType<BlogUebersicht>(Assert.IsType<ViewResult>(await controller.Index()).Model);
+        var zweite = Assert.IsType<BlogUebersicht>(Assert.IsType<ViewResult>(await controller.Index(2)).Model);
+
+        Assert.Equal(BlogController.ArtikelProSeite, erste.Artikel.Count);
+        Assert.Equal($"blog/a{BlogController.ArtikelProSeite + 4:D2}", erste.Artikel[0].Pfad);
+        Assert.Equal((2, 2), (zweite.Seite, zweite.Seiten));
+        Assert.Equal(["blog/a04", "blog/a03", "blog/a02", "blog/a01", "blog/a00"], zweite.Artikel.Select(a => a.Pfad));
+        Assert.IsType<NotFoundResult>(await controller.Index(3));
+        Assert.IsType<NotFoundResult>(await controller.Index(0));
+    }
+
+    [Fact]
+    public async Task Index_ShowsFirstPageWithoutArticles()
+    {
+        using var db = CreateContext();
+
+        var uebersicht = Assert.IsType<BlogUebersicht>(Assert.IsType<ViewResult>(await new BlogController(db).Index()).Model);
+
+        Assert.Empty(uebersicht.Artikel);
+        Assert.Equal(1, uebersicht.Seiten);
+        Assert.IsType<NotFoundResult>(await new BlogController(db).Index(2));
+    }
+
+    [Theory]
+    [InlineData(1, 1, new int[] { 1 })]
+    [InlineData(1, 3, new int[] { 1, 2, 3 })]
+    [InlineData(1, 10, new int[] { 1, 2, 3, 0, 10 })]
+    [InlineData(6, 10, new int[] { 1, 0, 4, 5, 6, 7, 8, 0, 10 })]
+    [InlineData(4, 10, new int[] { 1, 2, 3, 4, 5, 6, 0, 10 })]
+    public void Seitennummern_ShowsEdgesAndNeighbours(int seite, int seiten, int[] erwartet)
+    {
+        // 0 steht hier für eine Lücke.
+        Assert.Equal(erwartet, BlogController.Seitennummern(seite, seiten).Select(n => n ?? 0));
+    }
+
+    [Theory]
+    [InlineData(1, "/blog")]
+    [InlineData(3, "/blog?seite=3")]
+    public void UebersichtAdresse(int seite, string adresse)
+    {
+        Assert.Equal(adresse, BlogController.UebersichtAdresse(seite));
     }
 }
