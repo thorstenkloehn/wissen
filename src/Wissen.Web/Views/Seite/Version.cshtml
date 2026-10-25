@@ -1,9 +1,10 @@
 ﻿@model Wissen.Infrastructure.Models.SeitenVersion
 @{
-    ViewData["Title"] = $"Version {Model.Nummer}";
+    // Der Browser-Tab nennt die Überschrift dieses Stands (ohne Überschrift den Pfad), die Seite selbst nur die Nummer.
+    ViewData["Title"] = $"{Model.Titel ?? Model.Seite.Path} (Version {Model.Nummer})";
 }
 
-<h1>@ViewData["Title"]</h1>
+<h1>Version @Model.Nummer</h1>
 <p>
     Früherer Stand der Seite <a href="/@Model.Seite.Path">@Model.Seite.Path</a>
     vom @Model.ErstelltAm.ToLocalTime().ToString("dd.MM.yyyy HH:mm") von @(Model.Autor ?? "unbekannt")

@@ -302,6 +302,10 @@ namespace Wissen.Infrastructure.Migrations
                     b.Property<int>("SeiteId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Titel")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("SeiteId", "Nummer")

@@ -78,6 +78,7 @@ public class SeiteController(ApplicationDbContext db) : Controller
             MarkdownInhalt = model.MarkdownInhalt!,
             Inhalt = inhalt.Html,
             Kategorien = [.. inhalt.Kategorien],
+            Titel = inhalt.Titel,
             Autor = User?.Identity?.Name,
         });
 
@@ -260,6 +261,7 @@ public class SeiteController(ApplicationDbContext db) : Controller
             MarkdownInhalt = seite.MarkdownInhalt,
             Inhalt = seite.Inhalt,
             Kategorien = [.. seite.Kategorien],
+            Titel = seite.Titel,
             Autor = User?.Identity?.Name,
         });
         await db.SaveChangesAsync();

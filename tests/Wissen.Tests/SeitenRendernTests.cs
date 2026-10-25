@@ -70,18 +70,28 @@ public class SeitenRendernTests
         using (var db = CreateContext(name))
         {
             // HTML und Kategorien sind aktuell, nur der Titel fehlt noch.
-            db.Seiten.Add(new Seite { Path = "blog/x", MarkdownInhalt = "# Artikel", Inhalt = MarkdownRenderer.ToHtml("# Artikel") });
+            db.Seiten.Add(new Seite
+            {
+                Path = "blog/x",
+                MarkdownInhalt = "# Artikel",
+                Inhalt = MarkdownRenderer.ToHtml("# Artikel"),
+                Versionen = [new SeitenVersion { Nummer = 1, MarkdownInhalt = "# Entwurf", Inhalt = MarkdownRenderer.ToHtml("# Entwurf") }],
+            });
             await db.SaveChangesAsync();
         }
 
         using (var db = CreateContext(name))
         {
-            Assert.Equal(1, (await new SeitenRendern(db).RunAsync(speichern: true)).SeitenGeaendert);
+            var result = await new SeitenRendern(db).RunAsync(speichern: true);
+            Assert.Equal(1, result.SeitenGeaendert);
+            Assert.Equal(1, result.VersionenGeaendert);
         }
 
         using (var db = CreateContext(name))
         {
-            Assert.Equal("Artikel", (await db.Seiten.SingleAsync()).Titel);
+            var seite = await db.Seiten.Include(s => s.Versionen).SingleAsync();
+            Assert.Equal("Artikel", seite.Titel);
+            Assert.Equal("Entwurf", seite.Versionen.Single().Titel);
         }
     }
 

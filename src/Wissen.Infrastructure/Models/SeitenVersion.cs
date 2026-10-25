@@ -18,6 +18,9 @@ public class SeitenVersion
 
     public List<string> Kategorien { get; set; } = [];
 
+    // Wie Seite.Titel: der Text der ersten Überschrift dieses Stands, ohne Überschrift null.
+    public string? Titel { get; set; }
+
     public DateTime ErstelltAm { get; set; } = DateTime.UtcNow;
 
     // Benutzername (E-Mail-Adresse) des Kontos, das diesen Stand gespeichert hat. Als Text und nicht

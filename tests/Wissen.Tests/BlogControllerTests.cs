@@ -68,6 +68,9 @@ public class BlogControllerTests
         await controller.Bearbeiten(id, new SeiteBearbeitenViewModel { MarkdownInhalt = "Ohne Überschrift", Typ = Inhaltstyp.Blogartikel });
 
         Assert.Null((await db.Seiten.AsNoTracking().SingleAsync()).Titel);
+        // Jede Version behält die Überschrift ihres Stands.
+        var versionen = await db.SeitenVersionen.OrderBy(v => v.Nummer).Select(v => v.Titel).ToListAsync();
+        Assert.Equal(["Erster Titel", null], versionen);
     }
 
     [Fact]

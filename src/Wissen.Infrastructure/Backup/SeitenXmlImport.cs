@@ -76,6 +76,7 @@ public class SeitenXmlImport(ApplicationDbContext db)
                     MarkdownInhalt = versionMarkdown,
                     Inhalt = versionInhalt.Html,
                     Kategorien = versionInhalt.Kategorien,
+                    Titel = versionInhalt.Titel,
                     ErstelltAm = erstelltAm,
                     Autor = Autor(versionElement, nummer, path),
                 });
