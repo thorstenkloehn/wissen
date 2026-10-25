@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Xml.Linq;
+using AngleSharp.Html.Parser;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Wissen.Infrastructure.Data;
@@ -80,10 +81,31 @@ public class BlogController(ApplicationDbContext db) : Controller
                             new XElement("guid", new XAttribute("isPermaLink", "true"), adresse),
                             a.Datum is { } datum ? new XElement("pubDate", datum.ToUniversalTime().ToString("r", CultureInfo.InvariantCulture)) : null,
                             a.Kategorien.Select(k => new XElement("category", k)),
-                            new XElement("description", a.Inhalt));
+                            new XElement("description", AbsoluteAdressen(a.Inhalt, new Uri(adresse))));
                     }))));
 
         return Content(rss.Declaration + rss.ToString(SaveOptions.DisableFormatting), "application/rss+xml; charset=utf-8");
+    }
+
+    private static readonly HtmlParser Parser = new();
+
+    // Im Feed fehlt die Seite, gegen die der Browser relative Adressen (/doc/x, bild.png, #inhalt-...)
+    // auflöst; nicht jeder Feedreader nimmt dafür den Link des Artikels. Deshalb werden href und src
+    // gegen die Adresse des Artikels aufgelöst. Adressen mit Schema (https:, mailto:) bleiben, wie sie sind.
+    public static string AbsoluteAdressen(string html, Uri artikel)
+    {
+        var dokument = Parser.ParseDocument(html);
+        foreach (var element in dokument.Body!.QuerySelectorAll("[href], [src]"))
+        {
+            foreach (var name in (string[])["href", "src"])
+            {
+                if (element.GetAttribute(name) is { } wert && Uri.TryCreate(artikel, wert.Trim(), out var absolut))
+                {
+                    element.SetAttribute(name, absolut.AbsoluteUri);
+                }
+            }
+        }
+        return dokument.Body.InnerHtml;
     }
 
     // Abschnittsweise kodiert wie die Links der Übersicht.

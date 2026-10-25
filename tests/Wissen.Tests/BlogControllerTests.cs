@@ -175,7 +175,20 @@ public class BlogControllerTests
         Assert.Equal(["über", "Alter Artikel"], items.Take(2).Select(i => i.Element("title")!.Value));
         Assert.Equal("https://wissen.example/blog/%C3%BCber", items[0].Element("link")!.Value);
         Assert.Equal("<p>neu</p>", items[0].Element("description")!.Value);
+        Assert.Equal("<p>alt</p>", items[1].Element("description")!.Value);
         Assert.Equal("Thu, 01 Oct 2026 12:00:00 GMT", items[1].Element("pubDate")!.Value);
         Assert.Equal(["Technik"], items[1].Elements("category").Select(c => c.Value));
+    }
+
+    [Theory]
+    [InlineData("<a href=\"/doc/x\">x</a>", "<a href=\"https://wissen.example/doc/x\">x</a>")]
+    [InlineData("<img src=\"bild.png\" alt=\"b\">", "<img src=\"https://wissen.example/blog/bild.png\" alt=\"b\">")]
+    [InlineData("<a href=\"#inhalt-fn1\">1</a>", "<a href=\"https://wissen.example/blog/artikel#inhalt-fn1\">1</a>")]
+    [InlineData("<a href=\"https://fremd.example/a?b=1\">f</a>", "<a href=\"https://fremd.example/a?b=1\">f</a>")]
+    [InlineData("<a href=\"mailto:a@example.org\">m</a>", "<a href=\"mailto:a@example.org\">m</a>")]
+    [InlineData("<p>ohne &amp; Link</p>", "<p>ohne &amp; Link</p>")]
+    public void AbsoluteAdressen_ResolvesAgainstArticle(string html, string erwartet)
+    {
+        Assert.Equal(erwartet, BlogController.AbsoluteAdressen(html, new Uri("https://wissen.example/blog/artikel")));
     }
 }
