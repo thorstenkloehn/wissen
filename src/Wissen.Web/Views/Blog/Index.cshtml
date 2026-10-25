@@ -1,0 +1,55 @@
+@model List<BlogArtikel>
+@using System.Globalization
+@using Wissen.Web.Controllers
+@{
+    ViewData["Title"] = "Blog";
+    var deutsch = CultureInfo.GetCultureInfo("de-DE");
+}
+
+<h1>@ViewData["Title"]</h1>
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <form method="get" asp-controller="Seite" asp-action="Neu" class="row g-2 mb-4">
+        <input type="hidden" name="typ" value="@Wissen.Infrastructure.Models.Inhaltstyp.Blogartikel" />
+        <div class="col-auto">
+            <label for="neuer-artikel" class="visually-hidden">Pfad des neuen Artikels</label>
+            <input id="neuer-artikel" name="path" class="form-control" value="blog/" required />
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-primary">Neuen Artikel schreiben</button>
+        </div>
+    </form>
+}
+@if (Model.Count == 0)
+{
+    <p>Noch gibt es keinen Artikel.</p>
+}
+else
+{
+    // Nach Monaten gruppiert, die neuesten zuerst; die Reihenfolge kommt schon sortiert aus dem Controller.
+    foreach (var monat in Model.GroupBy(a => a.VeroeffentlichtAm?.ToLocalTime().ToString("MMMM yyyy", deutsch) ?? "Ohne Datum"))
+    {
+        <h2 class="h4 mt-4">@monat.Key</h2>
+        <ul class="list-unstyled">
+            @foreach (var artikel in monat)
+            {
+                <li class="mb-2">
+                    @if (artikel.VeroeffentlichtAm is { } datum)
+                    {
+                        <time class="text-muted me-2" datetime="@datum.ToString("o")">@datum.ToLocalTime().ToString("dd.MM.yyyy")</time>
+                    }
+                    <a href="/@string.Join('/', artikel.Pfad.Split('/').Select(Uri.EscapeDataString))">@BlogController.Titel(artikel)</a>
+                    @if (artikel.Kategorien.Count > 0)
+                    {
+                        <small class="text-muted">
+                            – @for (var i = 0; i < artikel.Kategorien.Count; i++)
+                            {
+                                @(i > 0 ? ", " : "")<a href="@KategorieController.Adresse(artikel.Kategorien[i])">@artikel.Kategorien[i]</a>
+                            }
+                        </small>
+                    }
+                </li>
+            }
+        </ul>
+    }
+}

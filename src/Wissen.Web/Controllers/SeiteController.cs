@@ -15,7 +15,7 @@ namespace Wissen.Web.Controllers;
 public class SeiteController(ApplicationDbContext db) : Controller
 {
     [HttpGet("neu")]
-    public IActionResult Neu(string? path)
+    public IActionResult Neu(string? path, Inhaltstyp typ = Inhaltstyp.Seite)
     {
         // Das Formular zeigt den Pfad nur an; ohne Pfad gibt es nichts anzulegen.
         if (string.IsNullOrWhiteSpace(path))
@@ -23,7 +23,7 @@ public class SeiteController(ApplicationDbContext db) : Controller
             return LocalRedirect("/");
         }
 
-        return View(new SeiteNeuViewModel { Path = path });
+        return View(new SeiteNeuViewModel { Path = path, Typ = typ });
     }
 
     [HttpPost("neu")]
@@ -39,6 +39,11 @@ public class SeiteController(ApplicationDbContext db) : Controller
         if (KategorieController.IstReserviert(path))
         {
             ModelState.AddModelError(nameof(model.Path), "Unter /kategorie/ zeigt die App die Kategorien; dort lässt sich keine Seite anlegen.");
+            return View(model);
+        }
+        if (BlogController.IstReserviert(path))
+        {
+            ModelState.AddModelError(nameof(model.Path), "Unter /blog zeigt die App die Übersicht der Artikel; dort lässt sich keine Seite anlegen. Wählen Sie z. B. blog/mein-artikel.");
             return View(model);
         }
         if (await db.Seiten.AnyAsync(s => s.Path == path))
@@ -64,6 +69,8 @@ public class SeiteController(ApplicationDbContext db) : Controller
             MarkdownInhalt = model.MarkdownInhalt!,
             Inhalt = inhalt.Html,
             Kategorien = inhalt.Kategorien,
+            Titel = inhalt.Titel,
+            Typ = model.Typ,
         };
         seite.Versionen.Add(new SeitenVersion
         {
@@ -102,6 +109,7 @@ public class SeiteController(ApplicationDbContext db) : Controller
         {
             Path = seite.Path,
             MarkdownInhalt = seite.MarkdownInhalt,
+            Typ = seite.Typ,
         });
     }
 
@@ -123,7 +131,10 @@ public class SeiteController(ApplicationDbContext db) : Controller
 
         try
         {
+            // Der Typ wird mit der Änderung gespeichert, ändert sich nur er, ohne neue Version.
+            seite.Typ = model.Typ;
             await AendereSeite(seite, model.MarkdownInhalt!);
+            await db.SaveChangesAsync();
         }
         catch (MarkdownException e)
         {
@@ -241,6 +252,7 @@ public class SeiteController(ApplicationDbContext db) : Controller
         seite.MarkdownInhalt = markdownInhalt;
         seite.Inhalt = inhalt.Html;
         seite.Kategorien = inhalt.Kategorien;
+        seite.Titel = inhalt.Titel;
         db.SeitenVersionen.Add(new SeitenVersion
         {
             SeiteId = seite.Id,

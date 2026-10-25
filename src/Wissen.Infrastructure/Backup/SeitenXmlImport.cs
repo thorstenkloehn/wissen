@@ -39,9 +39,11 @@ public class SeitenXmlImport(ApplicationDbContext db)
             var seite = new Seite
             {
                 Path = path,
+                Typ = Typ(element, path),
                 MarkdownInhalt = markdown,
                 Inhalt = inhalt.Html,
                 Kategorien = inhalt.Kategorien,
+                Titel = inhalt.Titel,
             };
 
             foreach (var versionElement in element.Element("versionsgeschichte")?.Elements("version") ?? [])
@@ -113,6 +115,8 @@ public class SeitenXmlImport(ApplicationDbContext db)
                 alt.MarkdownInhalt = seite.MarkdownInhalt;
                 alt.Inhalt = seite.Inhalt;
                 alt.Kategorien = seite.Kategorien;
+                alt.Titel = seite.Titel;
+                alt.Typ = seite.Typ;
                 db.SeitenVersionen.RemoveRange(alt.Versionen);
                 foreach (var version in seite.Versionen)
                 {
@@ -166,6 +170,18 @@ public class SeitenXmlImport(ApplicationDbContext db)
 
     private static string Required(XElement element, string name, string ort) =>
         element.Element(name)?.Value ?? throw new FormatException($"Das Element <{name}> {ort} fehlt.");
+
+    // Ohne Attribut typ (Dateien aus der Zeit vor den Inhaltstypen) ist es eine gewöhnliche Seite.
+    private static Inhaltstyp Typ(XElement element, string path)
+    {
+        var name = element.Attribute("typ")?.Value.Trim();
+        if (string.IsNullOrEmpty(name))
+        {
+            return Inhaltstyp.Seite;
+        }
+        return InhaltstypXml.Parse(name)
+            ?? throw new FormatException($"Das Attribut typ der Seite »{path}« ist unbekannt: »{name}«.");
+    }
 
     // Das Attribut autor fehlt bei Versionen aus der Zeit vor dieser Angabe.
     private static string? Autor(XElement versionElement, int nummer, string path)

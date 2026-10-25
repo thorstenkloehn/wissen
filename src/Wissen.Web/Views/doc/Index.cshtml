@@ -15,6 +15,16 @@
 }
 else
 {
+    @if (Model.Typ == Wissen.Infrastructure.Models.Inhaltstyp.Blogartikel)
+    {
+        <p class="text-muted">
+            <a href="/@Wissen.Web.Controllers.BlogController.Prefix">Blog</a>
+            @if (ViewData["VeroeffentlichtAm"] is DateTime datum)
+            {
+                <text>· </text><time datetime="@datum.ToString("o")">@datum.ToLocalTime().ToString("dd.MM.yyyy")</time>
+            }
+        </p>
+    }
     @Html.Raw(Model.Inhalt)
     <partial name="_Kategorien" model="Model.Kategorien" />
     @if (angemeldet)

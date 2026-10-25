@@ -6,7 +6,7 @@ namespace Wissen.Infrastructure.Rendering;
 // Fehler nennt die Stände, deren Markdown sich nicht umsetzen ließ; sie behalten ihr bisheriges HTML.
 public record SeitenRendernResult(int Seiten, int SeitenGeaendert, int Versionen, int VersionenGeaendert, IReadOnlyList<string> Fehler);
 
-// Erzeugt das gespeicherte HTML und die Kategorien aller Seiten und Versionen neu aus dem Markdown. Seite.Inhalt wird
+// Erzeugt das gespeicherte HTML und die Kategorien aller Seiten (und den Titel der Seiten) und Versionen neu aus dem Markdown. Seite.Inhalt wird
 // roh ausgegeben und entsteht nur beim Speichern: Ohne diesen Schritt gälte eine strengere Regel
 // des MarkdownRenderer nicht für Seiten, die vorher gespeichert wurden.
 public class SeitenRendern(ApplicationDbContext db)
@@ -28,10 +28,11 @@ public class SeitenRendern(ApplicationDbContext db)
             }
 
             if (Render(seite.MarkdownInhalt, $"Seite »{seite.Path}«", fehler) is { } inhalt
-                && (inhalt.Html != seite.Inhalt || !inhalt.Kategorien.SequenceEqual(seite.Kategorien)))
+                && (inhalt.Html != seite.Inhalt || !inhalt.Kategorien.SequenceEqual(seite.Kategorien) || inhalt.Titel != seite.Titel))
             {
                 seite.Inhalt = inhalt.Html;
                 seite.Kategorien = inhalt.Kategorien;
+                seite.Titel = inhalt.Titel;
                 seitenGeaendert++;
             }
             foreach (var version in seite.Versionen.OrderBy(v => v.Nummer))

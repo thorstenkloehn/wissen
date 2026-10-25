@@ -39,8 +39,14 @@ public partial class Seite
 
     public string MarkdownInhalt { get; set; } = string.Empty;
 
+    // Nicht versioniert: Ein Wechsel des Typs legt keine neue Version an.
+    public Inhaltstyp Typ { get; set; } = Inhaltstyp.Seite;
+
     // Die Kategorien aus dem Markdown ([[Kategorie:Name]]), beim Umsetzen ermittelt; auch keine.
     public List<string> Kategorien { get; set; } = [];
+
+    // Der Text der ersten Überschrift im Markdown, beim Umsetzen ermittelt; ohne Überschrift null.
+    public string? Titel { get; set; }
 
     public List<SeitenVersion> Versionen { get; set; } = [];
 }

@@ -64,6 +64,28 @@ public class SeitenRendernTests
     }
 
     [Fact]
+    public async Task Run_SetsTitleOfPagesSavedBeforeTitles()
+    {
+        var name = Guid.NewGuid().ToString();
+        using (var db = CreateContext(name))
+        {
+            // HTML und Kategorien sind aktuell, nur der Titel fehlt noch.
+            db.Seiten.Add(new Seite { Path = "blog/x", MarkdownInhalt = "# Artikel", Inhalt = MarkdownRenderer.ToHtml("# Artikel") });
+            await db.SaveChangesAsync();
+        }
+
+        using (var db = CreateContext(name))
+        {
+            Assert.Equal(1, (await new SeitenRendern(db).RunAsync(speichern: true)).SeitenGeaendert);
+        }
+
+        using (var db = CreateContext(name))
+        {
+            Assert.Equal("Artikel", (await db.Seiten.SingleAsync()).Titel);
+        }
+    }
+
+    [Fact]
     public async Task Run_RendersStoredHtmlAgainAndKeepsEverythingElse()
     {
         var name = await SeedAsync();

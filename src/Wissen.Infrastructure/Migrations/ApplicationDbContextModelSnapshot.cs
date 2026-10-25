@@ -248,6 +248,13 @@ namespace Wissen.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<string>("Titel")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("Typ")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Kategorien");
@@ -256,6 +263,8 @@ namespace Wissen.Infrastructure.Migrations
 
                     b.HasIndex("Path")
                         .IsUnique();
+
+                    b.HasIndex("Typ");
 
                     b.ToTable("Seiten", (string)null);
                 });

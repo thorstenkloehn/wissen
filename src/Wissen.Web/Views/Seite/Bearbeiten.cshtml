@@ -10,6 +10,14 @@
         <form asp-action="Bearbeiten" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
             <div class="mb-3">
+                <label asp-for="Typ" class="form-label"></label>
+                <select asp-for="Typ" class="form-select">
+                    <option value="@Wissen.Infrastructure.Models.Inhaltstyp.Seite">Seite</option>
+                    <option value="@Wissen.Infrastructure.Models.Inhaltstyp.Blogartikel">Blogartikel</option>
+                </select>
+                <div class="form-text">Blogartikel erscheinen zusätzlich unter <a href="/@Wissen.Web.Controllers.BlogController.Prefix">Blog</a>, nach dem Datum ihrer ersten Version geordnet.</div>
+            </div>
+            <div class="mb-3">
                 <label asp-for="MarkdownInhalt" class="form-label"></label>
                 <textarea asp-for="MarkdownInhalt" class="form-control font-monospace" rows="16" aria-required="true"></textarea>
                 <span asp-validation-for="MarkdownInhalt" class="text-danger"></span>

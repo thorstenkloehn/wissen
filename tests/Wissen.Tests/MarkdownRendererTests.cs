@@ -260,4 +260,25 @@ public class MarkdownRendererTests
         Assert.Equal(3, MarkdownRenderer.Render(markdown, maxKategorien: 3).Kategorien.Count);
         Assert.Throws<MarkdownException>(() => MarkdownRenderer.Render(markdown, maxKategorien: 2));
     }
+
+    [Theory]
+    [InlineData("# Titel\n\n## Zweite", "Titel")]
+    [InlineData("Text\n\n## *Hervor*gehoben mit `Code` und [Link](/x)", "Hervorgehoben mit Code und Link")]
+    [InlineData("Unterstrichen\n=============", "Unterstrichen")]
+    [InlineData("#\n\n# Erst &amp; dann  [[Kategorie:Technik]]", "Erst & dann")]
+    [InlineData("Nur Text", null)]
+    [InlineData("```\n# kein Titel\n```", null)]
+    public void Render_ReturnsTextOfFirstHeadingAsTitle(string markdown, string? titel)
+    {
+        Assert.Equal(titel, MarkdownRenderer.Render(markdown).Titel);
+    }
+
+    [Fact]
+    public void Render_ShortensLongTitle()
+    {
+        var titel = MarkdownRenderer.Render("# " + new string('a', 500)).Titel!;
+
+        Assert.Equal(MarkdownRenderer.MaxTitelLength, titel.Length);
+        Assert.EndsWith("…", titel);
+    }
 }

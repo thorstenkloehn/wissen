@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Wissen.Infrastructure.Models;
+using Wissen.Infrastructure.Rendering;
 
 namespace Wissen.Infrastructure.Data;
 
@@ -18,8 +19,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             seite.ToTable("Seiten");
             seite.Property(s => s.Path).HasMaxLength(Seite.MaxPathLength);
+            seite.Property(s => s.Titel).HasMaxLength(MarkdownRenderer.MaxTitelLength);
             seite.HasIndex(s => s.Path).IsUnique();
             seite.HasIndex(s => s.Kategorien).HasMethod("gin");
+            seite.HasIndex(s => s.Typ);
         });
 
         builder.Entity<SeitenVersion>(version =>

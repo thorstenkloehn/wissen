@@ -10,8 +10,9 @@ namespace Wissen.Infrastructure.Rendering;
 // Das Markdown lässt sich nicht in HTML umsetzen; die Meldung ist für den Benutzer bestimmt.
 public class MarkdownException(string message, Exception? innerException = null) : Exception(message, innerException);
 
-// Das HTML für Seite.Inhalt und die Kategorien aus dem Markdown, in der Reihenfolge ihres ersten Auftretens.
-public record GerendertesMarkdown(string Html, List<string> Kategorien);
+// Das HTML für Seite.Inhalt, die Kategorien aus dem Markdown in der Reihenfolge ihres ersten Auftretens
+// und der Text der ersten Überschrift (ohne Überschrift null).
+public record GerendertesMarkdown(string Html, List<string> Kategorien, string? Titel = null);
 
 // Erzeugt aus dem Markdown einer Seite das HTML für Seite.Inhalt.
 public static class MarkdownRenderer
@@ -186,10 +187,12 @@ public static class MarkdownRenderer
     {
         string html;
         List<string> kategorien;
+        string? titel;
         try
         {
             var document = Markdown.Parse(markdown, Pipeline);
             kategorien = KategorienEntfernen(document);
+            titel = ErsteUeberschrift(document);
             html = Markdown.ToHtml(document, Pipeline);
         }
         // Markdig bricht bei zu tiefer Verschachtelung und bei übergroßen Tabellen mit diesen Ausnahmen ab.
@@ -206,7 +209,42 @@ public static class MarkdownRenderer
         {
             throw new MarkdownException($"Aus dem Inhalt entsteht eine zu große Seite ({html.Length:N0} Zeichen HTML, erlaubt sind {maxHtmlLength:N0}). Bitte teilen Sie den Inhalt auf mehrere Seiten auf.");
         }
-        return new(Sanitizer.Sanitize(html), kategorien);
+        return new(Sanitizer.Sanitize(html), kategorien, titel);
+    }
+
+    // Obergrenze für den Titel in Zeichen; eine längere Überschrift wird gekürzt.
+    public const int MaxTitelLength = 200;
+
+    // Der reine Text der ersten Überschrift, gleich welcher Ebene: ohne Hervorhebungen und Links,
+    // Leerraum zusammengefasst. Eine Überschrift ohne Text zählt nicht.
+    private static string? ErsteUeberschrift(MarkdownDocument document)
+    {
+        foreach (var ueberschrift in document.Descendants<HeadingBlock>())
+        {
+            if (ueberschrift.Inline is null)
+            {
+                continue;
+            }
+            var text = new System.Text.StringBuilder();
+            foreach (var inline in ueberschrift.Inline.Descendants<Inline>())
+            {
+                text.Append(inline switch
+                {
+                    LiteralInline literal => literal.Content.ToString(),
+                    CodeInline code => code.Content,
+                    HtmlEntityInline entity => entity.Transcoded.ToString(),
+                    AutolinkInline autolink => autolink.Url,
+                    LineBreakInline => " ",
+                    _ => "",
+                });
+            }
+            var titel = string.Join(' ', text.ToString().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+            if (titel.Length > 0)
+            {
+                return titel.Length <= MaxTitelLength ? titel : titel[..(MaxTitelLength - 1)].TrimEnd() + "…";
+            }
+        }
+        return null;
     }
 
     // Nimmt die Kategorien aus dem Dokument, damit sie nicht im HTML erscheinen. Ein Absatz, der nur

@@ -2,10 +2,11 @@ using System.Xml;
 using System.Xml.Linq;
 using Microsoft.EntityFrameworkCore;
 using Wissen.Infrastructure.Data;
+using Wissen.Infrastructure.Models;
 
 namespace Wissen.Infrastructure.Backup;
 
-// Schreibt alle Seiten samt Versionsgeschichte als XML: Id, Pfad und Markdown. Das erzeugte HTML
+// Schreibt alle Seiten samt Versionsgeschichte als XML: Id, Pfad, Markdown und (außer bei gewöhnlichen Seiten) den Typ. Das erzeugte HTML
 // (Seite.Inhalt) und die Kategorien fehlen bewusst, beides entsteht neu aus dem Markdown.
 public class SeitenXmlExport(ApplicationDbContext db)
 {
@@ -23,6 +24,7 @@ public class SeitenXmlExport(ApplicationDbContext db)
                 seiten.Select(seite =>
                     new XElement("seite",
                         new XAttribute("id", seite.Id),
+                        seite.Typ == Inhaltstyp.Seite ? null : new XAttribute("typ", InhaltstypXml.Name(seite.Typ)),
                         new XElement("path", Clean(seite.Path)),
                         new XElement("markdown", Clean(seite.MarkdownInhalt)),
                         new XElement("versionsgeschichte",

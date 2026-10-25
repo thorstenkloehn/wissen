@@ -29,6 +29,14 @@ namespace Wissen.Web.Controllers
                 return fehlt;
             }
 
+            // Ein Blogartikel zeigt das Datum seiner ersten Version, wie die Übersicht unter /blog.
+            if (seite.Typ == Inhaltstyp.Blogartikel)
+            {
+                ViewData["VeroeffentlichtAm"] = await db.SeitenVersionen
+                    .Where(v => v.SeiteId == seite.Id)
+                    .MinAsync(v => (DateTime?)v.ErstelltAm);
+            }
+
             // Die Versionsgeschichte sehen nur angemeldete Benutzer.
             if (User?.Identity?.IsAuthenticated == true)
             {
