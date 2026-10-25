@@ -6,7 +6,12 @@
     var deutsch = CultureInfo.GetCultureInfo("de-DE");
 }
 
+@section Head {
+    <link rel="alternate" type="application/rss+xml" title="wissen – Blog" href="@BlogController.FeedAdresse" />
+}
+
 <h1>@ViewData["Title"]</h1>
+<p><a href="@BlogController.FeedAdresse">RSS-Feed</a> mit den neuesten @BlogController.FeedArtikel Artikeln</p>
 @if (User.Identity?.IsAuthenticated == true)
 {
     <form method="get" asp-controller="Seite" asp-action="Neu" class="row g-2 mb-4">
@@ -38,7 +43,7 @@ else
                     {
                         <time class="text-muted me-2" datetime="@datum.ToString("o")">@datum.ToLocalTime().ToString("dd.MM.yyyy")</time>
                     }
-                    <a href="/@string.Join('/', artikel.Pfad.Split('/').Select(Uri.EscapeDataString))">@BlogController.Titel(artikel)</a>
+                    <a href="@BlogController.Adresse(artikel.Pfad)">@BlogController.Titel(artikel)</a>
                     @if (artikel.Kategorien.Count > 0)
                     {
                         <small class="text-muted">

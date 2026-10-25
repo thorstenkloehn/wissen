@@ -1,4 +1,5 @@
 using System.Xml.Linq;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Wissen.Infrastructure.Backup;
@@ -146,5 +147,35 @@ public class BlogControllerTests
         var document = XDocument.Parse("<seiten><seite typ=\"roman\"><path>doc/x</path><markdown>x</markdown></seite></seiten>");
 
         Assert.Throws<FormatException>(() => new SeitenXmlImport(CreateContext()).Read(document));
+    }
+
+    [Fact]
+    public async Task Feed_ContainsNewestArticlesWithAbsoluteLinks()
+    {
+        using var db = CreateContext();
+        db.Seiten.AddRange(
+            new Seite { Path = "blog/alt", Titel = "Alter Artikel", Inhalt = "<p>alt</p>", Typ = Inhaltstyp.Blogartikel, Kategorien = ["Technik"], Versionen = [Version(1, 1)] },
+            new Seite { Path = "blog/über", Inhalt = "<p>neu</p>", Typ = Inhaltstyp.Blogartikel, Versionen = [Version(1, 10)] },
+            new Seite { Path = "doc/seite", Versionen = [Version(1, 15)] });
+        for (var i = 0; i < BlogController.FeedArtikel; i++)
+        {
+            db.Seiten.Add(new Seite { Path = $"blog/frueh-{i}", Typ = Inhaltstyp.Blogartikel, Versionen = [new SeitenVersion { Nummer = 1, ErstelltAm = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc) }] });
+        }
+        await db.SaveChangesAsync();
+        var controller = new BlogController(db) { ControllerContext = new() { HttpContext = new DefaultHttpContext() } };
+        controller.Request.Scheme = "https";
+        controller.Request.Host = new HostString("wissen.example");
+
+        var result = Assert.IsType<ContentResult>(await controller.Feed());
+
+        Assert.StartsWith("application/rss+xml", result.ContentType);
+        Assert.StartsWith("<?xml", result.Content);
+        var items = XDocument.Parse(result.Content!).Root!.Element("channel")!.Elements("item").ToList();
+        Assert.Equal(BlogController.FeedArtikel, items.Count);
+        Assert.Equal(["über", "Alter Artikel"], items.Take(2).Select(i => i.Element("title")!.Value));
+        Assert.Equal("https://wissen.example/blog/%C3%BCber", items[0].Element("link")!.Value);
+        Assert.Equal("<p>neu</p>", items[0].Element("description")!.Value);
+        Assert.Equal("Thu, 01 Oct 2026 12:00:00 GMT", items[1].Element("pubDate")!.Value);
+        Assert.Equal(["Technik"], items[1].Elements("category").Select(c => c.Value));
     }
 }
